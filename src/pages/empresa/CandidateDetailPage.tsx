@@ -96,7 +96,7 @@ export function EmpresaCandidateDetailPage() {
           <div className="space-y-5">
             <Card className="p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="grid h-20 w-20 place-items-center rounded-2xl bg-gradient-to-br from-primary to-[oklch(0.35_0.2_268)] text-2xl font-bold text-primary-foreground">
+                <div className="grid h-20 w-20 place-items-center rounded-lg bg-primary text-2xl font-bold text-primary-foreground">
                   {getInitials(application.user?.name ?? '?')}
                 </div>
                 <div className="flex-1">

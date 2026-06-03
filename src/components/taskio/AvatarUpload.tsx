@@ -48,7 +48,7 @@ export function AvatarUpload({ name, avatarUrl, onUpload, disabled }: AvatarUplo
         {displayUrl ? (
           <img src={displayUrl} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-primary to-[oklch(0.35_0.2_268)] text-lg font-semibold text-primary-foreground">
+          <div className="grid h-full w-full place-items-center bg-primary text-lg font-semibold text-primary-foreground">
             {getInitials(name)}
           </div>
         )}

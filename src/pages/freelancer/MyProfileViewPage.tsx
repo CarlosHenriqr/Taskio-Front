@@ -97,10 +97,10 @@ export function MyProfileViewPage() {
                         <img
                           src={profile.avatarUrl}
                           alt=""
-                          className="h-20 w-20 rounded-2xl border-4 border-card object-cover shadow-md sm:h-24 sm:w-24"
+                          className="h-20 w-20 rounded-lg border-4 border-card object-cover sm:h-24 sm:w-24"
                         />
                       ) : (
-                        <div className="grid h-20 w-20 place-items-center rounded-2xl border-4 border-card bg-gradient-to-br from-primary to-[oklch(0.35_0.2_268)] text-xl font-bold text-primary-foreground shadow-md sm:h-24 sm:w-24 sm:text-2xl">
+                        <div className="grid h-20 w-20 place-items-center rounded-lg border-4 border-card bg-primary text-xl font-bold text-primary-foreground sm:h-24 sm:w-24 sm:text-2xl">
                           {getInitials(profile.name)}
                         </div>
                       )}
@@ -190,7 +190,7 @@ export function MyProfileViewPage() {
                   {portfolio.map((p) => (
                     <div
                       key={p.id}
-                      className="rounded-xl border bg-surface-muted/50 p-4 transition-shadow hover:shadow-sm"
+                      className="rounded-lg border bg-surface-muted/50 p-4 transition-colors duration-150 hover:bg-muted/30"
                     >
                       <p className="font-semibold">{p.title}</p>
                       {p.description && (
@@ -221,7 +221,7 @@ export function MyProfileViewPage() {
                   {stack.map((s) => (
                     <span
                       key={s.technology.id}
-                      className="rounded-md border bg-surface-muted px-2.5 py-1 text-xs font-medium"
+                      className="rounded border bg-surface-muted px-2 py-0.5 font-mono text-[10px] font-medium"
                     >
                       {s.technology.name}
                     </span>
@@ -242,7 +242,7 @@ export function MyProfileViewPage() {
               {summary && summary.totalReviews > 0 ? (
                 <div className="mt-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex text-amber-500">
+                    <div className="flex text-warning">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
@@ -261,7 +261,7 @@ export function MyProfileViewPage() {
                     <div className="mt-4 space-y-3 border-t pt-4">
                       {recentReviews.slice(0, 3).map((r) => (
                         <div key={r.id}>
-                          <div className="flex items-center gap-1 text-amber-500">
+                          <div className="flex items-center gap-1 text-warning">
                             {Array.from({ length: r.rating }).map((_, i) => (
                               <Star key={i} className="h-3 w-3 fill-current" />
                             ))}

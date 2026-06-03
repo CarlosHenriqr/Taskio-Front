@@ -68,6 +68,6 @@ frontend/src/
 
 ## Design System
 
-Tokens em `src/styles.css`: paleta OKLCH, tipografia Inter/Geist, sombras, radius e variantes semânticas (`primary`, `success`, `warning`, `destructive`).
+Tokens em `src/styles.css`: paleta OKLCH (teal + amber), tipografia Space Grotesk / Plus Jakarta Sans / JetBrains Mono, backgrounds mesh/dot-grid/noise e variantes semânticas (`primary`, `success`, `warning`, `destructive`).
 
 Componentes reutilizáveis em `src/components/taskio/ui.tsx`: `Btn`, `Card`, `Badge`, `StatCard`, `EmptyState`, `Field`, inputs.

@@ -78,12 +78,13 @@ export function AppShell({
   };
 
   return (
-    <div className="min-h-screen bg-surface-muted">
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-surface/80 px-4 py-3 backdrop-blur lg:hidden">
+    <div className="min-h-screen bg-background">
+      {/* Mobile header */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-surface/90 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Logo subtitle={subtitle} />
         <button
           onClick={() => setOpen(true)}
-          className="grid h-9 w-9 place-items-center rounded-md border bg-surface"
+          className="grid h-9 w-9 place-items-center rounded-md border bg-surface text-muted-foreground transition-colors hover:text-foreground"
           aria-label="Abrir menu"
         >
           <Menu className="h-4 w-4" />
@@ -91,8 +92,9 @@ export function AppShell({
       </header>
 
       <div className="lg:flex">
+        {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r bg-sidebar transition-transform duration-300 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
+          className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-sidebar transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 ${
             open ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -100,7 +102,7 @@ export function AppShell({
             <Logo subtitle={subtitle} />
             <button
               onClick={() => setOpen(false)}
-              className="grid h-8 w-8 place-items-center rounded-md hover:bg-sidebar-accent lg:hidden"
+              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent lg:hidden"
               aria-label="Fechar"
             >
               <X className="h-4 w-4" />
@@ -108,7 +110,7 @@ export function AppShell({
           </div>
 
           <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-            <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <p className="px-3 pb-2 font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
               Workspace
             </p>
             {navWithBadges.map((item) => {
@@ -118,7 +120,7 @@ export function AppShell({
                   key={item.to}
                   to={item.to}
                   onClick={() => setOpen(false)}
-                  className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                  className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
                     active
                       ? 'bg-sidebar-accent text-sidebar-accent-foreground'
                       : 'text-sidebar-foreground hover:bg-sidebar-accent/60'
@@ -129,7 +131,7 @@ export function AppShell({
                   />
                   <span className="flex-1">{item.label}</span>
                   {item.badge && (
-                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                    <span className="rounded bg-primary/8 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-primary">
                       {item.badge}
                     </span>
                   )}
@@ -144,7 +146,7 @@ export function AppShell({
               <Link
                 to={primaryAction.to}
                 onClick={() => setOpen(false)}
-                className="flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+                className="flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-all duration-150 hover:brightness-110"
               >
                 <Plus className="h-4 w-4" /> {primaryAction.label}
               </Link>
@@ -154,10 +156,10 @@ export function AppShell({
                 <img
                   src={profile.avatarUrl}
                   alt=""
-                  className="h-9 w-9 shrink-0 rounded-full border object-cover"
+                  className="h-9 w-9 shrink-0 rounded-md border object-cover"
                 />
               ) : (
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-[oklch(0.35_0.2_268)] text-xs font-semibold text-primary-foreground">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
                   {user ? getInitials(user.name) : '?'}
                 </div>
               )}
@@ -169,14 +171,14 @@ export function AppShell({
                 <Link
                   to={accountPath}
                   onClick={() => setOpen(false)}
-                  className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent"
+                  className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent"
                   aria-label="Configurações"
                 >
                   <Settings className="h-4 w-4" />
                 </Link>
               ) : (
                 <span
-                  className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground/40"
+                  className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground/30"
                   aria-hidden
                 >
                   <Settings className="h-4 w-4" />
@@ -185,7 +187,7 @@ export function AppShell({
             </div>
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent"
+              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent"
             >
               <LogOut className="h-3.5 w-3.5" /> Sair
             </button>
@@ -195,25 +197,26 @@ export function AppShell({
         {open && (
           <button
             onClick={() => setOpen(false)}
-            className="fixed inset-0 z-30 bg-foreground/30 backdrop-blur-sm lg:hidden"
+            className="fixed inset-0 z-30 bg-foreground/20 backdrop-blur-sm lg:hidden"
             aria-label="Fechar menu"
           />
         )}
 
+        {/* Main content */}
         <main className="min-w-0 flex-1">
           {showSearch && (
-            <div className="sticky top-0 z-20 hidden border-b bg-surface/80 backdrop-blur lg:block">
+            <div className="sticky top-0 z-20 hidden border-b bg-surface/90 backdrop-blur-xl lg:block">
               <form
                 onSubmit={handleSearch}
-                className="flex items-center gap-4 px-8 py-4"
+                className="flex items-center gap-4 px-8 py-3"
               >
                 <div className="relative max-w-md flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Pesquisar projetos, candidatos..."
-                    className="h-9 w-full rounded-md border border-input bg-surface-muted pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:bg-surface focus:ring-2 focus:ring-ring/20"
+                    placeholder="Pesquisar..."
+                    className="h-9 w-full rounded-md border border-input bg-muted/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
                 <Link
@@ -222,12 +225,12 @@ export function AppShell({
                       ? '/empresa/notificacoes'
                       : '/freelancer/dashboard'
                   }
-                  className="relative grid h-9 w-9 place-items-center rounded-md border bg-surface transition-colors hover:bg-accent"
+                  className="relative grid h-9 w-9 place-items-center rounded-md border bg-surface text-muted-foreground transition-colors hover:text-foreground"
                   aria-label="Notificações"
                 >
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -237,7 +240,7 @@ export function AppShell({
           )}
 
           <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
                 {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}

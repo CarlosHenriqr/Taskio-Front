@@ -40,7 +40,7 @@ export function LoginPage() {
         <div className="flex flex-col px-6 py-10 sm:px-12">
           <Logo />
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
               Bem-vindo de volta
             </p>
             <h1 className="mt-2 font-display text-3xl font-bold tracking-tight">
@@ -94,7 +94,7 @@ export function LoginPage() {
                 />
                 <Link
                   to="/recuperar-senha"
-                  className="mt-1 inline-block text-xs font-medium text-primary hover:underline"
+                  className="mt-1 inline-block text-xs font-medium text-primary link-underline"
                 >
                   Esqueci minha senha
                 </Link>
@@ -111,14 +111,14 @@ export function LoginPage() {
               Não possui uma conta?{' '}
               <Link
                 to="/cadastro/freelancer"
-                className="font-semibold text-primary hover:underline"
+                className="font-semibold text-primary link-underline"
               >
                 Criar conta
               </Link>
             </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            © 2026 TASKIO · Plataforma segura e criptografada
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
+            &copy; 2026 TASKIO &middot; Plataforma segura e criptografada
           </p>
         </div>
 
