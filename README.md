@@ -66,6 +66,19 @@ frontend/src/
 - `npm run build` — build de produção
 - `npm run preview` — preview do build
 
+## Deploy (Cloudflare Pages)
+
+1. Conecte o repo [Taskio-Front](https://github.com/CarlosHenriqr/Taskio-Front) em **Workers & Pages → Create → Pages → Git**.
+2. Build settings:
+   - **Framework preset:** Vite
+   - **Build command:** `npm run build`
+   - **Build output directory:** `dist`
+   - **Node.js version:** 20 (`.node-version`)
+3. **Environment variables** (Production):
+   - `VITE_API_URL` = URL pública da API (ex.: `https://api.seudominio.com`)
+4. O arquivo `public/_redirects` garante que rotas do React Router funcionem (SPA).
+5. Domínio customizado opcional em **Custom domains**.
+
 ## Design System
 
 Tokens em `src/styles.css`: paleta OKLCH (teal + amber), tipografia Space Grotesk / Plus Jakarta Sans / JetBrains Mono, backgrounds mesh/dot-grid/noise e variantes semânticas (`primary`, `success`, `warning`, `destructive`).

@@ -1,21 +1,27 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Clock, Building2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/taskio/AppShell';
 import { Btn, Card, Field, TextArea } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { JobStatusBadge } from '@/components/shared/StatusBadge';
+import { JobDescriptionView } from '@/components/shared/JobDescriptionView';
+import { JobMetaBar } from '@/components/shared/JobMetaBar';
+import { JobTechStack } from '@/components/shared/JobTechStack';
 import { freelancerNav } from '@/lib/nav';
 import { jobsApi } from '@/lib/api/jobs.api';
-import { mapApiErrors, formatRelativeDate } from '@/lib/utils';
+import { profileApi } from '@/lib/api/profile.api';
+import { mapApiErrors } from '@/lib/utils';
+import { invalidateApplications } from '@/lib/queryInvalidation';
+import { ApiRequestError } from '@/lib/api/client';
 
 export function FreelancerJobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [coverLetter, setCoverLetter] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -25,15 +31,24 @@ export function FreelancerJobDetailPage() {
     enabled: !!id,
   });
 
+  const profileQuery = useQuery({
+    queryKey: ['profile', 'me'],
+    queryFn: () => profileApi.me(),
+  });
+
+  const hasResume = !!profileQuery.data?.resumeUrl?.trim();
+
   const applyMutation = useMutation({
     mutationFn: () => jobsApi.apply(id!, { coverLetter: coverLetter || undefined }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await invalidateApplications(queryClient);
       toast.success('Candidatura enviada com sucesso!');
       navigate('/freelancer/trabalhos');
     },
     onError: (err) => {
       const { message, fields } = mapApiErrors(err);
       setErrors(fields);
+      if (err instanceof ApiRequestError && err.code === 'SESSION_EXPIRED') return;
       toast.error(message);
     },
   });
@@ -56,8 +71,6 @@ export function FreelancerJobDetailPage() {
     );
   }
 
-  const stack = job.technologies ?? [];
-
   return (
     <AppShell
       nav={freelancerNav}
@@ -77,52 +90,51 @@ export function FreelancerJobDetailPage() {
         <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-5">
             <Card className="p-6">
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <Building2 className="h-4 w-4" />
-                  {job.company?.name ?? 'Empresa'}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {formatRelativeDate(job.createdAt)}
-                </span>
-                <JobStatusBadge status={job.status} />
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                {job.description}
-              </p>
-              {job.requirements && (
-                <>
-                  <h3 className="mt-6 font-display font-semibold">Requisitos</h3>
-                  <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                    {job.requirements}
-                  </p>
-                </>
-              )}
-              <div className="mt-4 flex flex-wrap gap-2">
-                {stack.map((t) => (
-                  <span
-                    key={t.technology.id}
-                    className={`rounded-md border px-2 py-0.5 text-xs font-medium ${
-                      t.type === 'REQUIRED' ? 'border-primary/30 bg-primary/5' : ''
-                    }`}
-                  >
-                    {t.technology.name}
-                    {t.type === 'REQUIRED' ? ' *' : ''}
-                  </span>
-                ))}
+              <h2 className="font-display text-xl font-bold tracking-tight">{job.title}</h2>
+              <JobMetaBar
+                className="mt-3"
+                companyName={job.company?.name}
+                deadline={job.deadline}
+                expiresAt={job.expiresAt}
+                createdAt={job.createdAt}
+                status={job.status}
+              />
+              <div className="mt-6">
+                <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sobre a vaga
+                </h3>
+                <div className="mt-3">
+                  <JobDescriptionView
+                    description={job.description}
+                    requirements={job.requirements}
+                  />
+                </div>
               </div>
             </Card>
           </div>
 
-          <aside>
+          <aside className="space-y-5">
+            <JobTechStack technologies={job.technologies} />
+
             {job.status === 'OPEN' && (
               <Card className="p-6">
                 <h3 className="font-display font-semibold">Candidatar-se</h3>
+                {!hasResume && !profileQuery.isLoading && (
+                  <p className="mt-2 text-sm text-destructive">
+                    Publique seu currículo antes de se candidatar.{' '}
+                    <Link to="/freelancer/perfil/editar" className="font-semibold underline">
+                      Ir para editar perfil
+                    </Link>
+                  </p>
+                )}
                 <form
                   className="mt-4 space-y-4"
                   onSubmit={(e) => {
                     e.preventDefault();
+                    if (!hasResume) {
+                      toast.error('Publique seu currículo em Editar perfil antes de se candidatar.');
+                      return;
+                    }
                     applyMutation.mutate();
                   }}
                 >
@@ -134,7 +146,11 @@ export function FreelancerJobDetailPage() {
                       onChange={(e) => setCoverLetter(e.target.value)}
                     />
                   </Field>
-                  <Btn className="w-full" type="submit" disabled={applyMutation.isPending}>
+                  <Btn
+                    className="w-full"
+                    type="submit"
+                    disabled={applyMutation.isPending || !hasResume || profileQuery.isLoading}
+                  >
                     {applyMutation.isPending ? 'Enviando...' : 'Enviar candidatura'}
                   </Btn>
                 </form>

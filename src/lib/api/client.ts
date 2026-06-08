@@ -36,9 +36,16 @@ export function clearAuthSession(): void {
   localStorage.removeItem(USER_KEY);
 }
 
+export const AUTH_SESSION_EXPIRED_EVENT = 'taskio:auth-session-expired';
+
+export function notifyAuthSessionExpired(): void {
+  clearAuthSession();
+  window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+}
+
 let refreshPromise: Promise<AuthTokens | null> | null = null;
 
-export async function refreshAccessToken(): Promise<AuthTokens | null> {
+export async function refreshAccessToken(options?: { silent?: boolean }): Promise<AuthTokens | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
 
@@ -50,12 +57,16 @@ export async function refreshAccessToken(): Promise<AuthTokens | null> {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken }),
         });
-        if (!res.ok) return null;
+        if (!res.ok) {
+          if (!options?.silent) notifyAuthSessionExpired();
+          return null;
+        }
         const json = (await res.json()) as ApiSuccess<AuthTokens & { user?: AuthUser }>;
         localStorage.setItem(TOKEN_KEY, json.data.accessToken);
         localStorage.setItem(REFRESH_KEY, json.data.refreshToken);
         return { accessToken: json.data.accessToken, refreshToken: json.data.refreshToken };
       } catch {
+        if (!options?.silent) notifyAuthSessionExpired();
         return null;
       } finally {
         refreshPromise = null;
@@ -107,13 +118,21 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       signal,
     });
 
-  let res = await doFetch();
+  let res: Response;
+  try {
+    res = await doFetch();
+  } catch {
+    throw new ApiRequestError(0, 'Não foi possível conectar ao servidor. Verifique se a API está rodando.', 'NETWORK_ERROR');
+  }
 
   if (res.status === 401 && auth) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       headers.Authorization = `Bearer ${refreshed.accessToken}`;
       res = await doFetch();
+    } else {
+      notifyAuthSessionExpired();
+      throw new ApiRequestError(401, 'Sua sessão expirou. Faça login novamente.', 'SESSION_EXPIRED');
     }
   }
 

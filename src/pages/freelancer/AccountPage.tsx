@@ -12,6 +12,7 @@ import { freelancerNav } from '@/lib/nav';
 import { profileApi } from '@/lib/api/profile.api';
 import { isValidPhone, normalizePhoneDigits } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
+import { invalidateProfile } from '@/lib/queryInvalidation';
 
 export function FreelancerAccountPage() {
   const queryClient = useQueryClient();
@@ -36,8 +37,8 @@ export function FreelancerAccountPage() {
   const saveProfileMutation = useMutation({
     mutationFn: () =>
       profileApi.updateUser({ name, phone: normalizePhoneDigits(phone) }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+    onSuccess: async () => {
+      await invalidateProfile(queryClient);
       toast.success('Dados da conta atualizados.');
     },
     onError: (err) => toast.error(mapApiErrors(err).message),
@@ -98,7 +99,7 @@ export function FreelancerAccountPage() {
                 avatarUrl={profile.avatarUrl}
                 onUpload={async (file) => {
                   const data = await profileApi.uploadUserAvatar(file);
-                  await queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+                  await invalidateProfile(queryClient);
                   return data;
                 }}
               />

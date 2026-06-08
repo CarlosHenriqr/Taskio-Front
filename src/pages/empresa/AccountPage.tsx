@@ -10,7 +10,9 @@ import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { empresaNav } from '@/lib/nav';
 import { profileApi } from '@/lib/api/profile.api';
+import { isValidPhone, normalizePhoneDigits } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
+import { invalidateProfile } from '@/lib/queryInvalidation';
 
 export function EmpresaAccountPage() {
   const queryClient = useQueryClient();
@@ -33,9 +35,13 @@ export function EmpresaAccountPage() {
   }, [profileQuery.data]);
 
   const saveProfileMutation = useMutation({
-    mutationFn: () => profileApi.updateCompany({ name, phone }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+    mutationFn: () =>
+      profileApi.updateCompany({
+        name: name.trim(),
+        phone: normalizePhoneDigits(phone),
+      }),
+    onSuccess: async () => {
+      await invalidateProfile(queryClient);
       toast.success('Dados da conta atualizados.');
     },
     onError: (err) => toast.error(mapApiErrors(err).message),
@@ -51,6 +57,20 @@ export function EmpresaAccountPage() {
     },
     onError: (err) => toast.error(mapApiErrors(err).message),
   });
+
+  const handleSaveProfile = () => {
+    const trimmedName = name.trim();
+    if (trimmedName.length < 2) {
+      toast.error('Informe a razão social com pelo menos 2 caracteres.');
+      return;
+    }
+    const phoneDigits = normalizePhoneDigits(phone);
+    if (phoneDigits && !isValidPhone(phone)) {
+      toast.error('Informe um telefone válido (10 ou 11 dígitos).');
+      return;
+    }
+    saveProfileMutation.mutate();
+  };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +116,7 @@ export function EmpresaAccountPage() {
                 avatarUrl={profile.avatarUrl}
                 onUpload={async (file) => {
                   const data = await profileApi.uploadCompanyAvatar(file);
-                  await queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+                  await invalidateProfile(queryClient);
                   return data;
                 }}
               />
@@ -113,9 +133,10 @@ export function EmpresaAccountPage() {
               </Field>
             </div>
             <Btn
+              type="button"
               className="mt-4"
               size="sm"
-              onClick={() => saveProfileMutation.mutate()}
+              onClick={handleSaveProfile}
               disabled={saveProfileMutation.isPending}
             >
               <Save className="h-3.5 w-3.5" /> Salvar dados

@@ -1,0 +1,5 @@
+# Cloudflare Pages — conecte este repo em Workers & Pages > Create > Pages > Git
+# Build: npm run build | Output: dist | Node: 20 (.node-version)
+name = "taskio-front"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "./dist"

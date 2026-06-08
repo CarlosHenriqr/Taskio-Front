@@ -7,6 +7,8 @@ export const applicationsApi = {
     return apiRequest<Application[]>(`/applications/me${q}`);
   },
 
+  getById: (id: string) => apiRequest<Application>(`/applications/me/${id}`),
+
   updateStatus: (id: string, status: ApplicationStatus) =>
     apiRequest<Application>(`/applications/${id}/status`, {
       method: 'PATCH',

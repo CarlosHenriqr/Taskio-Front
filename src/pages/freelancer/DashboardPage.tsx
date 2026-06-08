@@ -18,8 +18,8 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
 import { freelancerNav } from '@/lib/nav';
 import { applicationsApi } from '@/lib/api/applications.api';
-import { matchingApi } from '@/lib/api/matching.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
+import { useRecommendedJobs } from '@/hooks/useRecommendedJobs';
 import { formatRelativeDate } from '@/lib/utils';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
@@ -40,10 +40,7 @@ export function FreelancerDashboardPage() {
     queryFn: () => applicationsApi.myApplications(),
   });
 
-  const recommendedQuery = useQuery({
-    queryKey: ['matching', 'jobs', 5],
-    queryFn: () => matchingApi.recommendedJobs(5),
-  });
+  const { jobs: recommendedJobs } = useRecommendedJobs(20);
 
   const reviewsQuery = useQuery({
     queryKey: ['reviews', 'summary'],
@@ -91,7 +88,7 @@ export function FreelancerDashboardPage() {
               />
               <StatCard
                 label="Projetos recomendados"
-                value={recommendedQuery.data?.length ?? 0}
+                value={recommendedJobs.length}
                 icon={Sparkles}
               />
               <StatCard
@@ -142,7 +139,7 @@ export function FreelancerDashboardPage() {
                   </Link>
                 </div>
                 <div className="mt-4 space-y-2">
-                  {(recommendedQuery.data ?? []).slice(0, 3).map((p) => (
+                  {(recommendedJobs).slice(0, 3).map((p) => (
                     <Link
                       key={p.id}
                       to={`/freelancer/vagas/${p.id}`}
@@ -150,16 +147,14 @@ export function FreelancerDashboardPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold leading-tight">{p.title}</p>
-                        {p.matchPercent !== undefined && (
-                          <Badge tone="success">{p.matchPercent}% compatível</Badge>
-                        )}
+                        <Badge tone="success">{p.matchPercent}% compatível</Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">{p.company?.name}</p>
                     </Link>
                   ))}
-                  {!recommendedQuery.data?.length && (
+                  {!recommendedJobs.length && (
                     <p className="text-sm text-muted-foreground">
-                      Complete seu perfil para receber recomendações.
+                      Nenhuma vaga com compatibilidade ≥ 70%. Complete sua stack técnica.
                     </p>
                   )}
                 </div>

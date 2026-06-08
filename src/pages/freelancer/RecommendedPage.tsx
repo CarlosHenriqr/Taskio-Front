@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Sparkles } from 'lucide-react';
 import { AppShell } from '@/components/taskio/AppShell';
 import { EmptyState } from '@/components/taskio/ui';
@@ -8,17 +7,11 @@ import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobCard } from '@/components/shared/JobCard';
 import { freelancerNav } from '@/lib/nav';
-import { matchingApi } from '@/lib/api/matching.api';
+import { useRecommendedJobs } from '@/hooks/useRecommendedJobs';
 
 export function FreelancerRecommendedPage() {
   const navigate = useNavigate();
-
-  const query = useQuery({
-    queryKey: ['matching', 'jobs'],
-    queryFn: () => matchingApi.recommendedJobs(20),
-  });
-
-  const jobs = query.data ?? [];
+  const { jobs, isLoading, isError, refetch } = useRecommendedJobs();
 
   return (
     <AppShell
@@ -29,19 +22,19 @@ export function FreelancerRecommendedPage() {
       description="Projetos com maior compatibilidade com seu perfil técnico."
     >
       <PageTransition>
-        {query.isLoading && (
+        {isLoading && (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <CardSkeleton key={i} />
             ))}
           </div>
         )}
-        {query.isError && <ErrorState onRetry={() => query.refetch()} />}
-        {!query.isLoading && jobs.length === 0 && (
+        {isError && <ErrorState onRetry={() => refetch()} />}
+        {!isLoading && !isError && jobs.length === 0 && (
           <EmptyState
             icon={Sparkles}
             title="Nenhuma recomendação"
-            description="Complete seu perfil e stack técnica para receber matches."
+            description="Nenhuma vaga com compatibilidade ≥ 70%. Complete sua stack técnica ou ajuste seu perfil."
           />
         )}
         <div className="space-y-4">

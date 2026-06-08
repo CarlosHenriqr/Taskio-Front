@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Briefcase,
@@ -6,7 +7,6 @@ import {
   RefreshCw,
   Star,
   ArrowUpRight,
-  MoreHorizontal,
 } from 'lucide-react';
 import {
   Area,
@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompanyJobs } from '@/lib/companyJobs';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { matchingApi } from '@/lib/api/matching.api';
+import { filterByMinMatch } from '@/lib/matching.util';
 import { getInitials, formatRelativeDate } from '@/lib/utils';
 import type { Application, Job } from '@/types/api';
 
@@ -70,11 +71,17 @@ export function EmpresaDashboardPage() {
   });
 
   const firstJobId = jobsQuery.data?.[0]?.id;
+  const firstJobTitle = jobsQuery.data?.[0]?.title;
   const candidatesQuery = useQuery({
     queryKey: ['matching', 'candidates', firstJobId],
-    queryFn: () => matchingApi.recommendedCandidates(firstJobId!, 4),
+    queryFn: () => matchingApi.recommendedCandidates(firstJobId!, 20),
     enabled: !!firstJobId,
   });
+
+  const recommendedCandidates = useMemo(
+    () => filterByMinMatch(candidatesQuery.data ?? [], (c) => c.matchPercent).slice(0, 4),
+    [candidatesQuery.data],
+  );
 
   const jobs = jobsQuery.data ?? [];
   const applications = appsQuery.data ?? [];
@@ -212,38 +219,41 @@ export function EmpresaDashboardPage() {
                 Top matches gerados pelo motor de compatibilidade.
               </p>
             </div>
-            <Link to="/empresa/candidatos" className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary link-underline">
+            <Link
+              to={firstJobId ? `/empresa/candidatos?jobId=${firstJobId}` : '/empresa/candidatos'}
+              className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary link-underline"
+            >
               Ver todos
             </Link>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {(candidatesQuery.data ?? []).map((c) => (
+            {recommendedCandidates.map((c) => (
               <div
                 key={c.id}
                 className="flex items-center gap-3 rounded-md border bg-surface p-4 transition-all duration-150 hover:bg-surface-muted/50"
               >
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                  {getInitials(c.user?.name ?? '?')}
+                  {getInitials(c.name)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold">{c.user?.name ?? 'Candidato'}</p>
-                    {c.matchPercent !== undefined && (
-                      <Badge tone="success">{c.matchPercent}% match</Badge>
-                    )}
+                    <p className="truncate font-semibold">{c.name}</p>
+                    <Badge tone="success">{c.matchPercent}% match</Badge>
                   </div>
-                  <p className="truncate text-xs text-muted-foreground">{c.job?.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">{firstJobTitle}</p>
+                  {!!c.matchedTechnologies?.length && (
+                    <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                      Stack: {c.matchedTechnologies.join(', ')}
+                    </p>
+                  )}
                 </div>
-                <Link to={`/empresa/candidatos/${c.id}`}>
-                  <Btn size="sm" variant="ghost">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Btn>
-                </Link>
               </div>
             ))}
-            {!candidatesQuery.data?.length && (
+            {!recommendedCandidates.length && (
               <p className="col-span-2 text-sm text-muted-foreground">
-                Publique um projeto para ver recomendações de candidatos.
+                {firstJobId
+                  ? 'Nenhum candidato com compatibilidade ≥ 70% para este projeto.'
+                  : 'Publique um projeto para ver recomendações de candidatos.'}
               </p>
             )}
           </div>
@@ -260,9 +270,11 @@ export function EmpresaDashboardPage() {
       title="Dashboard"
       description="Acompanhe o pulso dos seus projetos e candidaturas."
       actions={
-        <Btn size="sm" variant="secondary" onClick={() => jobsQuery.refetch()}>
-          <ArrowUpRight className="h-3.5 w-3.5" /> Atualizar
-        </Btn>
+        <Link to="/empresa/conta">
+          <Btn size="sm" variant="secondary">
+            <ArrowUpRight className="h-3.5 w-3.5" /> Atualizar perfil
+          </Btn>
+        </Link>
       }
     >
       <PageTransition>{content()}</PageTransition>

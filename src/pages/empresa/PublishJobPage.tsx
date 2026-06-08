@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Info, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppShell } from '@/components/taskio/AppShell';
@@ -10,11 +10,18 @@ import { PageLoader } from '@/components/feedback/PageLoader';
 import { empresaNav } from '@/lib/nav';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { technologiesApi } from '@/lib/api/technologies.api';
-import { mapApiErrors } from '@/lib/utils';
+import { ApiRequestError } from '@/lib/api/client';
+import {
+  mapPublishJobApiErrors,
+  toIsoDateTimeLocal,
+  validatePublishJobForm,
+} from '@/lib/publishJobValidation';
+import { invalidateAfterJobPublish } from '@/lib/queryInvalidation';
 import type { Technology } from '@/types/api';
 
 export function EmpresaPublishPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [requirements, setRequirements] = useState('');
@@ -29,27 +36,53 @@ export function EmpresaPublishPage() {
     queryFn: () => technologiesApi.list(),
   });
 
+  useEffect(() => {
+    if (techQuery.isError) {
+      toast.error('Não foi possível carregar as tecnologias. Verifique se a API está rodando.');
+    }
+  }, [techQuery.isError]);
+
   const createMutation = useMutation({
     mutationFn: () =>
       jobsApi.create({
-        title,
-        description,
-        requirements: requirements || undefined,
-        deadline: new Date(deadline).toISOString(),
-        expiresAt: new Date(expiresAt).toISOString(),
+        title: title.trim(),
+        description: description.trim(),
+        requirements: requirements.trim() || undefined,
+        deadline: toIsoDateTimeLocal(deadline),
+        expiresAt: toIsoDateTimeLocal(expiresAt),
         requiredTechnologyIds: requiredIds,
         desirableTechnologyIds: desirableIds,
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await invalidateAfterJobPublish(queryClient);
       toast.success('Vaga publicada com sucesso!');
       navigate('/empresa/projetos');
     },
     onError: (err) => {
-      const { message, fields } = mapApiErrors(err);
+      const { message, fields } = mapPublishJobApiErrors(err);
       setErrors(fields);
+      if (err instanceof ApiRequestError && err.code === 'SESSION_EXPIRED') return;
       toast.error(message);
     },
   });
+
+  const submitPublish = () => {
+    const fieldErrors = validatePublishJobForm({
+      title,
+      description,
+      requirements,
+      deadline,
+      expiresAt,
+      requiredIds,
+      desirableIds,
+    });
+    setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) {
+      toast.error('Revise os campos destacados antes de publicar.');
+      return;
+    }
+    createMutation.mutate();
+  };
 
   const techs = techQuery.data ?? [];
 
@@ -72,7 +105,7 @@ export function EmpresaPublishPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createMutation.mutate();
+    submitPublish();
   };
 
   if (techQuery.isLoading) return <PageLoader />;
@@ -93,16 +126,18 @@ export function EmpresaPublishPage() {
           </Link>
           <Btn
             size="sm"
-            onClick={() => createMutation.mutate()}
-            disabled={createMutation.isPending}
+            type="submit"
+            form="publish-job-form"
+            disabled={createMutation.isPending || techQuery.isError}
           >
-            Publicar projeto <ArrowRight className="h-3.5 w-3.5" />
+            {createMutation.isPending ? 'Publicando...' : 'Publicar projeto'}{' '}
+            {!createMutation.isPending && <ArrowRight className="h-3.5 w-3.5" />}
           </Btn>
         </>
       }
     >
       <PageTransition>
-        <form onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+        <form id="publish-job-form" onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-5">
             <Card className="flex gap-3 border-primary/20 bg-primary/5 p-4 text-sm">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -143,7 +178,7 @@ export function EmpresaPublishPage() {
                     />
                   </Field>
                 </div>
-                <Field label="Stack tecnológica (obrigatória)" hint="Clique para marcar como obrigatória">
+                <Field label="Stack tecnológica (obrigatória)" hint="Clique para marcar como obrigatória" error={errors.technologies}>
                   <div className="flex flex-wrap gap-2">
                     {techs.map((t) => (
                       <button
@@ -211,6 +246,12 @@ export function EmpresaPublishPage() {
                 </Field>
               </div>
             </Card>
+
+            <div className="flex justify-end lg:hidden">
+              <Btn type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? 'Publicando...' : 'Publicar projeto'}
+              </Btn>
+            </div>
           </div>
 
           <aside className="space-y-5">

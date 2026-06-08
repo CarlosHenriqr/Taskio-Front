@@ -13,7 +13,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
   const [type, setType] = useState<'user' | 'company'>('user');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
@@ -23,7 +23,7 @@ export function LoginPage() {
     setErrors({});
     setFormError('');
     try {
-      const path = await login({ email, password, type });
+      const path = await login({ email: identifier.trim(), password, type });
       toast.success('Login realizado com sucesso!');
       navigate(path);
     } catch (err) {
@@ -38,7 +38,7 @@ export function LoginPage() {
     <PageTransition>
       <div className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
         <div className="flex flex-col px-6 py-10 sm:px-12">
-          <Logo />
+          <Logo icon="home" />
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
             <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
               Bem-vindo de volta
@@ -71,14 +71,19 @@ export function LoginPage() {
                   </Btn>
                 </div>
               </Field>
-              <Field label="E-mail" htmlFor="email" error={errors.email}>
+              <Field
+                label={type === 'user' ? 'E-mail ou CPF' : 'E-mail ou CNPJ'}
+                htmlFor="identifier"
+                error={errors.email}
+              >
                 <TextInput
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
+                  id="identifier"
+                  type="text"
+                  autoComplete="username"
+                  placeholder={type === 'user' ? 'seu@email.com ou CPF' : 'seu@email.com ou CNPJ'}
                   icon={Mail}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                 />
               </Field>

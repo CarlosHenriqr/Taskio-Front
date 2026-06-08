@@ -9,8 +9,12 @@ type ProtectedRouteProps = {
 };
 
 export function ProtectedRoute({ allowedTypes, allowedRoles }: ProtectedRouteProps) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isInitializing } = useAuth();
   const location = useLocation();
+
+  if (isInitializing) {
+    return <PageLoader />;
+  }
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;

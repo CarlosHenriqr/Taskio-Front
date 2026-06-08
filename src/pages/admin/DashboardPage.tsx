@@ -36,7 +36,6 @@ export function AdminDashboardPage() {
       subtitle="Admin"
       title="Dashboard"
       description="Visão geral da plataforma TASKIO."
-      showSearch={false}
     >
       <PageTransition>
         {isLoading && (

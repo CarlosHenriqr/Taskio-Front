@@ -2,19 +2,28 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 import { authApi, type LoginPayload, type RegisterCompanyPayload, type RegisterUserPayload } from '@/lib/api/auth.api';
-import { clearAuthSession, getRefreshToken, getStoredUser } from '@/lib/api/client';
+import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  clearAuthSession,
+  getRefreshToken,
+  getStoredUser,
+  refreshAccessToken,
+} from '@/lib/api/client';
 import { getDashboardPath } from '@/lib/nav';
 import type { AuthUser } from '@/types/api';
+import { toast } from 'sonner';
 
 type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitializing: boolean;
   login: (payload: LoginPayload) => Promise<string>;
   registerUser: (payload: RegisterUserPayload) => Promise<string>;
   registerCompany: (payload: RegisterCompanyPayload) => Promise<string>;
@@ -26,6 +35,41 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(() => !!getStoredUser() && !!getRefreshToken());
+
+  useEffect(() => {
+    const onSessionExpired = () => {
+      setUser(null);
+      toast.error('Sua sessão expirou. Faça login novamente.');
+    };
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onSessionExpired);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrapSession() {
+      const storedUser = getStoredUser();
+      const refreshToken = getRefreshToken();
+      if (!storedUser || !refreshToken) {
+        setIsInitializing(false);
+        return;
+      }
+
+      const tokens = await refreshAccessToken({ silent: true });
+      if (!tokens && !cancelled) {
+        clearAuthSession();
+        setUser(null);
+      }
+      if (!cancelled) setIsInitializing(false);
+    }
+
+    void bootstrapSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = useCallback(async (payload: LoginPayload) => {
     setIsLoading(true);
@@ -65,12 +109,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     const refreshToken = getRefreshToken();
-    if (refreshToken) {
-      await authApi.logout(refreshToken);
-    } else {
+    try {
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      } else {
+        clearAuthSession();
+      }
+    } catch {
       clearAuthSession();
+    } finally {
+      setUser(null);
     }
-    setUser(null);
   }, []);
 
   const value = useMemo(
@@ -78,12 +127,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: !!user,
       isLoading,
+      isInitializing,
       login,
       registerUser,
       registerCompany,
       logout,
     }),
-    [user, isLoading, login, registerUser, registerCompany, logout],
+    [user, isLoading, isInitializing, login, registerUser, registerCompany, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

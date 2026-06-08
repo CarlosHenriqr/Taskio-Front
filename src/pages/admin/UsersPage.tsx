@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/feedback/ErrorState';
 import { adminNav } from '@/lib/nav';
 import { adminApi } from '@/lib/api/admin.api';
 import { formatRelativeDate } from '@/lib/utils';
+import { invalidateAdminUsers } from '@/lib/queryInvalidation';
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
@@ -23,8 +24,8 @@ export function AdminUsersPage() {
   const blockMutation = useMutation({
     mutationFn: ({ id, blocked }: { id: string; blocked: boolean }) =>
       blocked ? adminApi.unblockUser(id, type) : adminApi.blockUser(id, type),
-    onSuccess: (_, { blocked }) => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    onSuccess: async (_, { blocked }) => {
+      await invalidateAdminUsers(queryClient);
       toast.success(blocked ? 'Usuário desbloqueado.' : 'Usuário bloqueado.');
     },
     onError: () => toast.error('Erro na operação.'),
@@ -38,7 +39,6 @@ export function AdminUsersPage() {
       subtitle="Admin"
       title="Usuários"
       description="Gerencie freelancers e empresas da plataforma."
-      showSearch={false}
     >
       <PageTransition>
         <Card className="mb-5 p-4">

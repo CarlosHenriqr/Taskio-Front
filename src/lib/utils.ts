@@ -44,6 +44,17 @@ export const APPLICATION_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Cancelada',
 };
 
+export const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
+  APPLICATION_ACCEPTED: 'Candidatura aceita!',
+  APPLICATION_REJECTED: 'Candidatura recusada',
+  APPLICATION_STATUS_CHANGED: 'Atualização de candidatura',
+  NEW_APPLICATION: 'Nova candidatura',
+};
+
+export function getNotificationTitle(type: string): string {
+  return NOTIFICATION_TYPE_LABELS[type] ?? 'Notificação';
+}
+
 export const SKILL_LEVEL_LABELS: Record<string, string> = {
   BASICO: 'Básico',
   INTERMEDIARIO: 'Intermediário',
@@ -59,7 +70,43 @@ export function mapApiErrors(err: unknown): { message: string; fields: Record<st
         fields[key] = msgs[0] ?? '';
       }
     }
+    if (err.code === 'SESSION_EXPIRED') {
+      return { message: 'Sua sessão expirou. Faça login novamente.', fields };
+    }
+    if (err.code === 'MISSING_RESUME_URL') {
+      return {
+        message: 'Publique seu currículo em Editar perfil antes de se candidatar.',
+        fields,
+      };
+    }
+    if (err.code === 'INVALID_STATUS_TRANSITION') {
+      return {
+        message: 'Esta ação não é permitida para o status atual da candidatura.',
+        fields,
+      };
+    }
+    if (err.code === 'APPLICATION_STATUS_FINAL') {
+      return {
+        message: 'Esta candidatura já foi finalizada e não pode ser alterada.',
+        fields,
+      };
+    }
+    if (err.code === 'APPLICATION_CANNOT_CANCEL') {
+      return {
+        message: 'Esta candidatura não pode ser cancelada no status atual.',
+        fields,
+      };
+    }
+    if (err.code === 'INVALID_RESET_CODE') {
+      return {
+        message: 'Código inválido ou expirado. Solicite um novo código.',
+        fields: { ...fields, code: fields.code ?? 'Código inválido ou expirado.' },
+      };
+    }
     return { message: err.message, fields };
+  }
+  if (err instanceof Error && err.message) {
+    return { message: err.message, fields: {} };
   }
   return { message: 'Ocorreu um erro. Tente novamente.', fields: {} };
 }

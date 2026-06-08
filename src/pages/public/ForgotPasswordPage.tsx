@@ -40,13 +40,16 @@ export function ForgotPasswordPage() {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    if (!/^\d{6}$/.test(code)) {
+      setErrors({ code: 'Informe o código de 6 dígitos enviado por e-mail.' });
+      toast.error('Código inválido. Informe 6 dígitos.');
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await authApi.verifyResetCode(email, code);
-      if (!result.valid) {
-        toast.error('Código inválido ou expirado.');
-        return;
-      }
+      await authApi.verifyResetCode(email, code);
       toast.success('Código verificado!');
       setStep('reset');
     } catch (err) {
@@ -137,12 +140,16 @@ export function ForgotPasswordPage() {
 
           {step === 'code' && (
             <form className="mt-6 space-y-4" onSubmit={handleVerify}>
-              <Field label="Código de verificação" error={errors.code}>
+              <Field label="Código de verificação" error={errors.code} hint="6 dígitos numéricos">
                 <TextInput
                   placeholder="000000"
                   icon={KeyRound}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  pattern="\d{6}"
                   value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   required
                 />
               </Field>

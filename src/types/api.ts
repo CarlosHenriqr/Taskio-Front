@@ -83,24 +83,35 @@ export type Application = {
   updatedAt: string;
   jobId: string;
   userId: string;
-  job?: Job;
+  job?: Job & {
+    company?: {
+      id: string;
+      name: string;
+      email?: string | null;
+      phone?: string | null;
+      avatarUrl?: string | null;
+    };
+  };
   user?: {
     id: string;
     name: string;
     email: string;
+    phone?: string | null;
     avatarUrl?: string | null;
     bio?: string | null;
   };
+  matchScore?: number;
+  matchPercent?: number;
+  matchedTechnologies?: string[];
 };
 
 export type Notification = {
   id: string;
-  title: string;
-  body: string;
   type: string;
+  content: string;
+  data?: Record<string, unknown> | null;
   read: boolean;
   createdAt: string;
-  metadata?: Record<string, unknown> | null;
 };
 
 export type Review = {
@@ -164,8 +175,28 @@ export type PortfolioItem = {
   imageUrl?: string | null;
 };
 
-export type MatchingJob = Job & { matchScore?: number; matchPercent?: number };
-export type MatchingCandidate = Application & { matchScore?: number; matchPercent?: number };
+export type RecommendedCandidate = {
+  id: string;
+  name: string;
+  email: string;
+  resumeUrl?: string | null;
+  matchScore: number;
+  matchPercent: number;
+  matchedTechnologies: string[];
+};
+
+export type MatchingJob = Job & {
+  matchScore?: number;
+  matchPercent: number;
+  matchedTechnologies?: string[];
+};
+
+/** @deprecated Use RecommendedCandidate for matching API responses */
+export type MatchingCandidate = Application & {
+  matchScore?: number;
+  matchPercent?: number;
+  matchedTechnologies?: string[];
+};
 
 export type AdminUser = {
   id: string;

@@ -24,6 +24,7 @@ export const freelancerNav: NavItem[] = [
   { label: 'Buscar vagas', to: '/freelancer/vagas', icon: Search },
   { label: 'Recomendadas', to: '/freelancer/recomendadas', icon: Sparkles },
   { label: 'Meus trabalhos', to: '/freelancer/trabalhos', icon: BriefcaseBusiness },
+  { label: 'Notificações', to: '/freelancer/notificacoes', icon: Bell },
   { label: 'Meu perfil', to: '/freelancer/perfil', icon: FileUser },
 ];
 

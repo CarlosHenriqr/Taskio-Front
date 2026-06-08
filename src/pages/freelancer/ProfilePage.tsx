@@ -19,6 +19,7 @@ import {
 } from '@/lib/jobRoles';
 import { normalizePhoneDigits, validateFreelancerProfile } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
+import { invalidateProfile } from '@/lib/queryInvalidation';
 import type {
   CreateExperiencePayload,
   Experience,
@@ -34,6 +35,7 @@ export function FreelancerProfilePage() {
   const queryClient = useQueryClient();
   const [bio, setBio] = useState('');
   const [phone, setPhone] = useState('');
+  const [resumeUrl, setResumeUrl] = useState('');
   const [selectedTechIds, setSelectedTechIds] = useState<string[]>([]);
 
   const profileQuery = useQuery({
@@ -50,11 +52,31 @@ export function FreelancerProfilePage() {
     if (profileQuery.data) {
       setBio(profileQuery.data.bio ?? '');
       setPhone(profileQuery.data.phone ?? '');
+      setResumeUrl(profileQuery.data.resumeUrl ?? '');
       setSelectedTechIds(
         profileQuery.data.techStack?.map((s) => s.technology.id) ?? [],
       );
     }
   }, [profileQuery.data]);
+
+  const resumeMutation = useMutation({
+    mutationFn: () => profileApi.updateResume(resumeUrl.trim()),
+    onSuccess: async () => {
+      await invalidateProfile(queryClient);
+      toast.success('Currículo publicado.');
+    },
+    onError: (err) => toast.error(mapApiErrors(err).message),
+  });
+
+  const deleteResumeMutation = useMutation({
+    mutationFn: () => profileApi.deleteResume(),
+    onSuccess: async () => {
+      setResumeUrl('');
+      await invalidateProfile(queryClient);
+      toast.success('Currículo removido.');
+    },
+    onError: (err) => toast.error(mapApiErrors(err).message),
+  });
 
   const handleSave = () => {
     const err = validateFreelancerProfile(bio, phone, selectedTechIds.length);
@@ -75,8 +97,8 @@ export function FreelancerProfilePage() {
       }));
       await profileApi.updateTechStack(skills);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+    onSuccess: async () => {
+      await invalidateProfile(queryClient);
       toast.success('Perfil atualizado.');
       navigate('/freelancer/perfil');
     },
@@ -173,6 +195,52 @@ export function FreelancerProfilePage() {
           </Card>
 
           <Card className="p-6">
+            <h3 className="font-display font-semibold">Currículo</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Obrigatório para se candidatar a vagas. Informe um link público para seu CV (PDF no
+              Google Drive, Dropbox, LinkedIn, etc.).
+            </p>
+            <div className="mt-4 space-y-3">
+              <Field label="URL do currículo">
+                <TextInput
+                  type="url"
+                  value={resumeUrl}
+                  onChange={(e) => setResumeUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+              </Field>
+              <div className="flex flex-wrap gap-2">
+                <Btn
+                  type="button"
+                  size="sm"
+                  disabled={!resumeUrl.trim() || resumeMutation.isPending}
+                  onClick={() => resumeMutation.mutate()}
+                >
+                  {resumeMutation.isPending ? 'Salvando...' : 'Publicar currículo'}
+                </Btn>
+                {profile?.resumeUrl && (
+                  <>
+                    <a href={profile.resumeUrl} target="_blank" rel="noreferrer">
+                      <Btn type="button" size="sm" variant="secondary">
+                        Ver currículo atual
+                      </Btn>
+                    </a>
+                    <Btn
+                      type="button"
+                      size="sm"
+                      variant="danger"
+                      disabled={deleteResumeMutation.isPending}
+                      onClick={() => deleteResumeMutation.mutate()}
+                    >
+                      Remover
+                    </Btn>
+                  </>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6">
             <h3 className="font-display font-semibold">
               Stack tecnológica <span className="text-destructive">*</span>
             </h3>
@@ -238,9 +306,12 @@ export function FreelancerProfilePage() {
 
           <ExperienceSection
             experiences={profile?.experiences ?? []}
-            onChange={() => queryClient.invalidateQueries({ queryKey: ['profile', 'me'] })}
+            onChange={() => invalidateProfile(queryClient)}
           />
-          <PortfolioSection items={profile?.portfolio ?? []} onChange={() => profileQuery.refetch()} />
+          <PortfolioSection
+            items={profile?.portfolio ?? []}
+            onChange={() => invalidateProfile(queryClient)}
+          />
         </div>
       </PageTransition>
     </AppShell>
@@ -252,7 +323,7 @@ function ExperienceSection({
   onChange,
 }: {
   experiences: Experience[];
-  onChange: () => void;
+  onChange: () => void | Promise<void>;
 }) {
   const [rolePreset, setRolePreset] = useState(DEFAULT_JOB_ROLE);
   const [roleCustom, setRoleCustom] = useState('');
@@ -303,7 +374,7 @@ function ExperienceSection({
       setEndDate('');
       setIsCurrent(false);
       setDescription('');
-      onChange();
+      await onChange();
     } catch (err) {
       const { message, fields } = mapApiErrors(err);
       const fieldMsg = Object.values(fields).find(Boolean);
@@ -315,7 +386,7 @@ function ExperienceSection({
     try {
       await profileApi.deleteExperience(id);
       toast.success('Experiência removida.');
-      onChange();
+      await onChange();
     } catch {
       toast.error('Erro ao remover.');
     }
@@ -419,7 +490,7 @@ function PortfolioSection({
   onChange,
 }: {
   items: PortfolioItem[];
-  onChange: () => void;
+  onChange: () => void | Promise<void>;
 }) {
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -432,7 +503,7 @@ function PortfolioSection({
       setTitle('');
       setUrl('');
       setDescription('');
-      onChange();
+      await onChange();
     } catch (err) {
       toast.error(mapApiErrors(err).message);
     }
@@ -442,7 +513,7 @@ function PortfolioSection({
     try {
       await profileApi.deletePortfolio(id);
       toast.success('Item removido.');
-      onChange();
+      await onChange();
     } catch {
       toast.error('Erro ao remover.');
     }

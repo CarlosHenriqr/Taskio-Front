@@ -1,4 +1,4 @@
-import { ApiRequestError } from '@/lib/api/client';
+import { ApiRequestError, notifyAuthSessionExpired } from '@/lib/api/client';
 import { getAccessToken, refreshAccessToken } from '@/lib/api/client';
 import type { ApiError, ApiSuccess } from '@/types/api';
 
@@ -35,6 +35,8 @@ export async function apiUploadForm<T>(path: string, formData: FormData): Promis
     if (refreshed) {
       token = refreshed.accessToken;
       res = await doFetch(token);
+    } else {
+      notifyAuthSessionExpired();
     }
   }
 

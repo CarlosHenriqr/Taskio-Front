@@ -6,12 +6,12 @@ import { Btn, Card, EmptyState } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { empresaNav } from '@/lib/nav';
+import { freelancerNav } from '@/lib/nav';
 import { notificationsApi } from '@/lib/api/notifications.api';
 import { formatRelativeDate, getNotificationTitle } from '@/lib/utils';
 import { invalidateNotifications } from '@/lib/queryInvalidation';
 
-export function EmpresaNotificationsPage() {
+export function FreelancerNotificationsPage() {
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
@@ -32,11 +32,11 @@ export function EmpresaNotificationsPage() {
 
   return (
     <AppShell
-      nav={empresaNav}
-      subtitle="Empresa"
-      primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}
+      nav={freelancerNav}
+      subtitle="Freelancer"
+      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
       title="Notificações"
-      description="Acompanhe atualizações de candidaturas e projetos."
+      description="Acompanhe atualizações das suas candidaturas."
     >
       <PageTransition>
         {listQuery.isLoading && (
@@ -51,7 +51,7 @@ export function EmpresaNotificationsPage() {
           <EmptyState
             icon={Bell}
             title="Nenhuma notificação"
-            description="Você será avisado quando houver novidades."
+            description="Você será avisado quando uma empresa responder sua candidatura."
           />
         )}
         <div className="space-y-3">

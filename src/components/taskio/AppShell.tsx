@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { type LucideIcon, Bell, Search, Settings, LogOut, Plus, Menu, X } from 'lucide-react';
+import { type LucideIcon, Settings, LogOut, Plus, Menu, X } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Logo } from './Logo';
+import { NotificationDropdown } from './NotificationDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationsApi } from '@/lib/api/notifications.api';
 import { profileApi } from '@/lib/api/profile.api';
@@ -18,7 +19,6 @@ export function AppShell({
   description,
   actions,
   children,
-  showSearch = true,
 }: {
   nav: NavItem[];
   subtitle: string;
@@ -27,18 +27,17 @@ export function AppShell({
   description?: string;
   actions?: ReactNode;
   children: ReactNode;
-  showSearch?: boolean;
 }) {
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
 
   const { data: unread } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => notificationsApi.unreadCount(),
     refetchInterval: 30000,
+    enabled: !!user && (user.type === 'user' || user.type === 'company'),
   });
 
   const { data: profile } = useQuery({
@@ -54,6 +53,14 @@ export function AppShell({
         ? '/empresa/conta'
         : null;
 
+  const notificationsPath =
+    user?.type === 'company'
+      ? '/empresa/notificacoes'
+      : user?.type === 'user'
+        ? '/freelancer/notificacoes'
+        : null;
+
+  const showNotifications = !!notificationsPath;
   const unreadCount = unread?.count ?? 0;
   const isActive = (to: string) => pathname === to || (to !== '/' && pathname.startsWith(to + '/'));
 
@@ -64,17 +71,12 @@ export function AppShell({
   );
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (user?.type === 'user') {
-      navigate(`/freelancer/vagas?search=${encodeURIComponent(search)}`);
-    } else if (user?.type === 'company') {
-      navigate(`/empresa/projetos?search=${encodeURIComponent(search)}`);
+    try {
+      await logout();
+    } catch {
+      // logout já limpa a sessão local
     }
+    navigate('/login');
   };
 
   return (
@@ -82,13 +84,18 @@ export function AppShell({
       {/* Mobile header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-surface/90 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Logo subtitle={subtitle} />
-        <button
-          onClick={() => setOpen(true)}
-          className="grid h-9 w-9 place-items-center rounded-md border bg-surface text-muted-foreground transition-colors hover:text-foreground"
-          aria-label="Abrir menu"
-        >
-          <Menu className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {showNotifications && notificationsPath && (
+            <NotificationDropdown allPath={notificationsPath} />
+          )}
+          <button
+            onClick={() => setOpen(true)}
+            className="grid h-9 w-9 place-items-center rounded-md border bg-surface text-muted-foreground transition-colors hover:text-foreground"
+            aria-label="Abrir menu"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       <div className="lg:flex">
@@ -204,38 +211,9 @@ export function AppShell({
 
         {/* Main content */}
         <main className="min-w-0 flex-1">
-          {showSearch && (
-            <div className="sticky top-0 z-20 hidden border-b bg-surface/90 backdrop-blur-xl lg:block">
-              <form
-                onSubmit={handleSearch}
-                className="flex items-center gap-4 px-8 py-3"
-              >
-                <div className="relative max-w-md flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Pesquisar..."
-                    className="h-9 w-full rounded-md border border-input bg-muted/50 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary/20"
-                  />
-                </div>
-                <Link
-                  to={
-                    user?.type === 'company'
-                      ? '/empresa/notificacoes'
-                      : '/freelancer/dashboard'
-                  }
-                  className="relative grid h-9 w-9 place-items-center rounded-md border bg-surface text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label="Notificações"
-                >
-                  <Bell className="h-4 w-4" />
-                  {unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 font-mono text-[9px] font-bold text-destructive-foreground">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
-              </form>
+          {showNotifications && notificationsPath && (
+            <div className="sticky top-0 z-20 hidden border-b bg-surface/90 backdrop-blur-xl lg:flex lg:justify-end lg:px-8 lg:py-3">
+              <NotificationDropdown allPath={notificationsPath} />
             </div>
           )}
 

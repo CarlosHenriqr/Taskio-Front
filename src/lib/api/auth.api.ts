@@ -2,6 +2,7 @@ import { apiRequest, clearAuthSession, setAuthSession } from '@/lib/api/client';
 import type { AuthTokens, AuthUser } from '@/types/api';
 
 export type LoginPayload = {
+  /** E-mail, CPF (freelancer) ou CNPJ (empresa), conforme o tipo de conta. */
   email: string;
   password: string;
   type: 'user' | 'company';
@@ -37,23 +38,23 @@ export const authApi = {
 
   logout: async (refreshToken: string) => {
     try {
-      await apiRequest('/auth/logout', { method: 'POST', body: { refreshToken } });
+      await apiRequest('/auth/logout', { method: 'POST', body: { refreshToken }, auth: false });
     } finally {
       clearAuthSession();
     }
   },
 
   forgotPassword: (email: string) =>
-    apiRequest<{ message: string }>('/auth/password/forgot', {
+    apiRequest<void>('/auth/password/forgot', {
       method: 'POST',
-      body: { email },
+      body: { email: email.trim().toLowerCase() },
       auth: false,
     }),
 
   verifyResetCode: (email: string, code: string) =>
-    apiRequest<{ valid: boolean }>('/auth/password/verify-code', {
+    apiRequest<void>('/auth/password/verify-code', {
       method: 'POST',
-      body: { email, code },
+      body: { email: email.trim().toLowerCase(), code: code.trim() },
       auth: false,
     }),
 
@@ -63,9 +64,13 @@ export const authApi = {
     newPassword: string;
     confirmNewPassword: string;
   }) =>
-    apiRequest<{ message: string }>('/auth/password/reset', {
+    apiRequest<void>('/auth/password/reset', {
       method: 'POST',
-      body: payload,
+      body: {
+        ...payload,
+        email: payload.email.trim().toLowerCase(),
+        code: payload.code.trim(),
+      },
       auth: false,
     }),
 

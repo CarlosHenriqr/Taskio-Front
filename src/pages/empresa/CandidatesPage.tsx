@@ -8,10 +8,13 @@ import { PageTransition } from '@/components/layout/PageTransition';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
+import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
+import { ApplicationActions } from '@/components/empresa/ApplicationActions';
 import { empresaNav } from '@/lib/nav';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompanyJobs } from '@/lib/companyJobs';
 import { jobsApi } from '@/lib/api/jobs.api';
+import { matchingApi } from '@/lib/api/matching.api';
 import { getInitials, formatRelativeDate } from '@/lib/utils';
 import type { Application, ApplicationStatus } from '@/types/api';
 
@@ -29,25 +32,40 @@ export function EmpresaCandidatesPage() {
   });
 
   const appsQuery = useQuery({
-    queryKey: ['company', 'all-applications', user?.id, statusFilter, jobsQuery.data],
+    queryKey: ['company', 'all-applications', user?.id, jobIdFilter, statusFilter, jobsQuery.data],
     queryFn: async () => {
-      const jobs = jobsQuery.data ?? [];
-      const result: Array<Application & { jobTitle: string }> = [];
+      const jobs = (jobsQuery.data ?? []).filter(
+        (job) => !jobIdFilter || job.id === jobIdFilter,
+      );
+      const result: Array<
+        Application & { jobTitle: string; matchPercent: number; matchedTechnologies: string[] }
+      > = [];
       for (const job of jobs) {
-        const apps = (await jobsApi.listApplications(
-          job.id,
-          statusFilter || undefined,
-        )) as Application[];
-        apps.forEach((a) => result.push({ ...a, jobTitle: job.title }));
+        const [apps, matches] = await Promise.all([
+          jobsApi.listApplications(job.id, statusFilter || undefined) as Promise<Application[]>,
+          matchingApi.recommendedCandidates(job.id, 100).catch(() => []),
+        ]);
+        const matchByUserId = new Map(matches.map((m) => [m.id, m]));
+        apps.forEach((a) => {
+          const userId = a.userId ?? a.user?.id ?? '';
+          const match = matchByUserId.get(userId);
+          result.push({
+            ...a,
+            jobId: a.jobId ?? job.id,
+            jobTitle: job.title,
+            matchPercent: match?.matchPercent ?? 0,
+            matchedTechnologies: match?.matchedTechnologies ?? [],
+          });
+        });
       }
       return result;
     },
     enabled: !!jobsQuery.data,
   });
 
-  const applications = (appsQuery.data ?? []).filter(
-    (a) => !jobIdFilter || a.jobId === jobIdFilter,
-  );
+  const applications = (appsQuery.data ?? [])
+    .filter((a) => !jobIdFilter || a.jobId === jobIdFilter)
+    .sort((a, b) => (b.matchPercent ?? 0) - (a.matchPercent ?? 0));
 
   return (
     <AppShell
@@ -110,21 +128,39 @@ export function EmpresaCandidatesPage() {
         )}
         <div className="space-y-3">
           {applications.map((a) => (
-            <Link key={a.id} to={`/empresa/candidatos/${a.id}`}>
-              <Card className="flex items-center gap-4 p-4 transition-colors duration-150 hover:bg-surface-muted/50">
-                <div className="grid h-11 w-11 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
+            <Card
+              key={a.id}
+              className="flex items-center gap-4 p-4 transition-colors duration-150 hover:bg-surface-muted/50"
+            >
+              <Link to={`/empresa/candidatos/${a.id}`} className="flex min-w-0 flex-1 items-center gap-4">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
                   {getInitials(a.user?.name ?? '?')}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{a.user?.name ?? 'Candidato'}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{a.user?.name ?? 'Candidato'}</p>
+                    <MatchScoreBadge score={a.matchPercent} />
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {a.jobTitle} · {formatRelativeDate(a.createdAt)}
                   </p>
+                  {!!a.matchedTechnologies?.length && (
+                    <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                      Stack: {a.matchedTechnologies.join(', ')}
+                    </p>
+                  )}
                 </div>
                 <ApplicationStatusBadge status={a.status} />
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Card>
-            </Link>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+              <ApplicationActions
+                applicationId={a.id}
+                status={a.status}
+                candidateName={a.user?.name}
+                variant="compact"
+                onSuccess={() => appsQuery.refetch()}
+              />
+            </Card>
           ))}
         </div>
       </PageTransition>

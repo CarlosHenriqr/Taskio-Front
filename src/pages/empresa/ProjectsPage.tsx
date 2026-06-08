@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompanyJobs } from '@/lib/companyJobs';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { formatRelativeDate } from '@/lib/utils';
+import { invalidateCompany } from '@/lib/queryInvalidation';
 import type { JobStatus } from '@/types/api';
 
 export function EmpresaProjectsPage() {
@@ -33,8 +34,8 @@ export function EmpresaProjectsPage() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: JobStatus }) =>
       jobsApi.updateStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['company', 'jobs'] });
+    onSuccess: async () => {
+      await invalidateCompany(queryClient);
       toast.success('Status atualizado.');
     },
     onError: () => toast.error('Erro ao atualizar status.'),

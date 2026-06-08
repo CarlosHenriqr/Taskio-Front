@@ -10,10 +10,11 @@ import { freelancerNav } from '@/lib/nav';
 import { profileApi } from '@/lib/api/profile.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { getInitials } from '@/lib/utils';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function MyProfileViewPage() {
   const profileQuery = useQuery({
-    queryKey: ['profile', 'me'],
+    queryKey: queryKeys.profile.me,
     queryFn: () => profileApi.me(),
   });
 
@@ -55,7 +56,8 @@ export function MyProfileViewPage() {
     !profile.bio?.trim() ||
     profile.bio.trim().length < 10 ||
     phoneDigits.length < 10 ||
-    stack.length === 0;
+    stack.length === 0 ||
+    !profile.resumeUrl?.trim();
 
   return (
     <AppShell
@@ -63,7 +65,11 @@ export function MyProfileViewPage() {
       subtitle="Freelancer"
       primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
       title="Meu perfil"
-      description="Como empresas e o sistema de matching enxergam seu perfil."
+      description={
+        profileQuery.isFetching && !profileQuery.isLoading
+          ? 'Atualizando perfil…'
+          : 'Como empresas e o sistema de matching enxergam seu perfil.'
+      }
       actions={
         <Link to="/freelancer/perfil/editar">
           <Btn size="sm">
@@ -78,9 +84,9 @@ export function MyProfileViewPage() {
             <p className="text-sm text-foreground">
               Seu perfil ainda está incompleto.{' '}
               <Link to="/freelancer/perfil/editar" className="font-semibold text-primary hover:underline">
-                Preencha bio, telefone e stack tecnológica
+                Preencha bio, telefone, stack e currículo
               </Link>{' '}
-              (campos obrigatórios) para melhorar seus matches.
+              (campos obrigatórios) para melhorar seus matches e se candidatar.
             </p>
           </Card>
         )}
@@ -145,6 +151,28 @@ export function MyProfileViewPage() {
                   <Link to="/freelancer/perfil/editar" className="text-primary hover:underline">
                     Adicionar agora
                   </Link>
+                </p>
+              )}
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-display text-lg font-semibold">Currículo</h3>
+              {profile.resumeUrl ? (
+                <a
+                  href={profile.resumeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                >
+                  Ver currículo <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              ) : (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Nenhum currículo publicado.{' '}
+                  <Link to="/freelancer/perfil/editar" className="text-primary hover:underline">
+                    Adicionar agora
+                  </Link>{' '}
+                  para se candidatar a vagas.
                 </p>
               )}
             </Card>

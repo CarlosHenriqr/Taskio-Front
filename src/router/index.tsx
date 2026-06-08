@@ -24,6 +24,7 @@ import { FreelancerJobDetailPage } from '@/pages/freelancer/JobDetailPage';
 import { FreelancerRecommendedPage } from '@/pages/freelancer/RecommendedPage';
 import { FreelancerApplicationsPage } from '@/pages/freelancer/ApplicationsPage';
 import { FreelancerApplicationDetailPage } from '@/pages/freelancer/ApplicationDetailPage';
+import { FreelancerNotificationsPage } from '@/pages/freelancer/NotificationsPage';
 import { FreelancerProfilePage } from '@/pages/freelancer/ProfilePage';
 import { MyProfileViewPage } from '@/pages/freelancer/MyProfileViewPage';
 import { FreelancerAccountPage } from '@/pages/freelancer/AccountPage';
@@ -72,6 +73,7 @@ export const router = createBrowserRouter([
           { path: 'freelancer/recomendadas', element: <FreelancerRecommendedPage /> },
           { path: 'freelancer/trabalhos', element: <FreelancerApplicationsPage /> },
           { path: 'freelancer/trabalhos/:id', element: <FreelancerApplicationDetailPage /> },
+          { path: 'freelancer/notificacoes', element: <FreelancerNotificationsPage /> },
           { path: 'freelancer/perfil', element: <MyProfileViewPage /> },
           { path: 'freelancer/perfil/editar', element: <FreelancerProfilePage /> },
           { path: 'freelancer/curriculo', element: <Navigate to="/freelancer/perfil" replace /> },

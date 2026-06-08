@@ -10,6 +10,7 @@ import { JobStatusBadge } from '@/components/shared/StatusBadge';
 import { adminNav } from '@/lib/nav';
 import { adminApi } from '@/lib/api/admin.api';
 import { formatRelativeDate } from '@/lib/utils';
+import { invalidateAdminJobs, invalidatePublicJobs, invalidateCompany } from '@/lib/queryInvalidation';
 
 export function AdminJobsPage() {
   const queryClient = useQueryClient();
@@ -21,8 +22,12 @@ export function AdminJobsPage() {
 
   const moderateMutation = useMutation({
     mutationFn: (id: string) => adminApi.moderateRemoveJob(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'jobs'] });
+    onSuccess: async () => {
+      await Promise.all([
+        invalidateAdminJobs(queryClient),
+        invalidatePublicJobs(queryClient),
+        invalidateCompany(queryClient),
+      ]);
       toast.success('Vaga removida pela moderação.');
     },
     onError: () => toast.error('Erro ao moderar vaga.'),
@@ -36,7 +41,6 @@ export function AdminJobsPage() {
       subtitle="Admin"
       title="Vagas"
       description="Modere vagas publicadas na plataforma."
-      showSearch={false}
     >
       <PageTransition>
         {query.isLoading && <TableSkeleton />}

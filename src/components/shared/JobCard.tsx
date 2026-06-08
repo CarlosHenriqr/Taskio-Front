@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
-import { Card, Btn, Badge } from '@/components/taskio/ui';
+import { Card, Btn } from '@/components/taskio/ui';
 import { JobStatusBadge } from '@/components/shared/StatusBadge';
+import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
 import type { Job } from '@/types/api';
 import { formatRelativeDate } from '@/lib/utils';
+import { getJobDescriptionPreview } from '@/lib/jobDescription.util';
 
 export function JobCard({
   job,
@@ -33,8 +35,8 @@ export function JobCard({
             <span className="text-border">/</span>
             <Clock className="h-3 w-3" />
             {formatRelativeDate(job.createdAt)}
-            {matchPercent !== undefined && matchPercent >= 70 && (
-              <Badge tone="success">Match {matchPercent}%</Badge>
+            {matchPercent !== undefined && (
+              <MatchScoreBadge score={matchPercent} suffix="compatível" />
             )}
           </div>
           <Link
@@ -44,7 +46,7 @@ export function JobCard({
             {job.title}
           </Link>
           <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
-            {job.description}
+            {getJobDescriptionPreview(job.description)}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {stack.slice(0, 5).map((s) => (
