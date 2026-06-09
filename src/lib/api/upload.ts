@@ -1,8 +1,7 @@
+import { API_BASE } from '@/lib/api/config';
 import { ApiRequestError, notifyAuthSessionExpired } from '@/lib/api/client';
 import { getAccessToken, refreshAccessToken } from '@/lib/api/client';
 import type { ApiError, ApiSuccess } from '@/types/api';
-
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
 
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 

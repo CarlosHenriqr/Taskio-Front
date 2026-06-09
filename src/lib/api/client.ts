@@ -1,6 +1,5 @@
 import type { ApiError, ApiSuccess, AuthTokens, AuthUser } from '@/types/api';
-
-const API_BASE = import.meta.env.VITE_API_URL ?? '/api';
+import { API_BASE } from '@/lib/api/config';
 
 const TOKEN_KEY = 'taskio_access_token';
 const REFRESH_KEY = 'taskio_refresh_token';
