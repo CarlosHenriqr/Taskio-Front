@@ -85,15 +85,22 @@ Backend em produção: [Taskio-API no Render](https://taskio-api-0vtm.onrender.c
 | **Build output directory** | `dist` |
 | **Node.js version** | `20` (`.node-version`) |
 
-### 3. Variáveis de ambiente (Production)
+### 3. Variáveis de ambiente (Production) — **obrigatório**
 
-| Key | Value |
-|-----|-------|
-| `VITE_API_URL` | `https://taskio-api-0vtm.onrender.com` |
+No Dashboard → **Settings** → **Environment variables** → **Add**:
 
-> O Vite lê `VITE_*` **no build**. Se mudar a URL da API, faça **Retry deployment** no Pages.
+| Key | Value | Environment |
+|-----|-------|-------------|
+| `VITE_API_URL` | `https://taskio-api-0vtm.onrender.com` | **Production** (e Preview) |
 
-### 4. CORS no backend (Render)
+> Se o log mostrar `Build environment variables: (none found)`, a API não foi embutida no build. Adicione a variável e clique **Retry deployment**.
+
+### 4. SPA (rotas `/login`, `/empresa/*`, etc.)
+
+Não use `_redirects` com `/* /index.html 200` — o Cloudflare rejeita como loop infinito.  
+Sem `404.html` na raiz do `dist`, o Pages já trata o projeto como SPA e serve `index.html` nas rotas do React Router ([docs](https://developers.cloudflare.com/pages/configuration/serving-pages/)).
+
+### 5. CORS no backend (Render)
 
 No serviço **taskio-api** (Render) → **Environment**:
 
@@ -103,15 +110,12 @@ No serviço **taskio-api** (Render) → **Environment**:
 
 Salve e aguarde o redeploy do backend.
 
-### 5. SPA e assets
+### 6. Assets e headers
 
-- `public/_redirects` — rotas do React Router (`/login`, `/empresa/*`, etc.)
 - `public/_headers` — headers de segurança e cache de assets
-- `wrangler.toml` — referência para deploy via Wrangler CLI (opcional)
+- `wrangler.toml` — output dir e referência de config
 
-### 6. Deploy
-
-Clique **Save and Deploy**. A URL será algo como `https://taskio-front.pages.dev`.
+### 7. Deploy
 
 Domínio customizado opcional em **Custom domains**.
 
