@@ -68,7 +68,7 @@ frontend/src/
 
 ## Deploy (Cloudflare Pages)
 
-Backend em produção: [Taskio-API no Render](https://taskio-api-0vtm.onrender.com) (`https://taskio-api-0vtm.onrender.com`).
+Backend em produção: [Taskio-API no Render](https://taskio-api-6vta.onrender.com) (`https://taskio-api-6vta.onrender.com`).
 
 ### 1. Conectar o repositório
 
@@ -91,7 +91,7 @@ No Dashboard → **Settings** → **Environment variables** → **Add**:
 
 | Key | Value | Environment |
 |-----|-------|-------------|
-| `VITE_API_URL` | `https://taskio-api-0vtm.onrender.com` | **Production** (e Preview) |
+| `VITE_API_URL` | `https://taskio-api-6vta.onrender.com` | **Production** (e Preview) |
 
 > Se o log mostrar `Build environment variables: (none found)`, a API não foi embutida no build. Adicione a variável e clique **Retry deployment**.
 
@@ -106,7 +106,7 @@ No serviço **taskio-api** (Render) → **Environment**:
 
 | Key | Value |
 |-----|-------|
-| `FRONTEND_URL` | URL do Cloudflare Pages (ex.: `https://taskio-front.pages.dev`) |
+| `FRONTEND_URL` | `https://taskio-1nr.pages.dev` |
 
 Salve e aguarde o redeploy do backend.
 

@@ -2,7 +2,7 @@
 # Build: npm run build | Output: dist | Node: 20 (.node-version)
 #
 # OBRIGATÓRIO no Dashboard → Settings → Environment variables (Production):
-#   VITE_API_URL = https://taskio-api-0vtm.onrender.com
+#   VITE_API_URL = https://taskio-api-6vta.onrender.com
 # Depois de adicionar, clique Retry deployment.
 #
 # SPA: sem 404.html, o Pages serve index.html em rotas do React Router automaticamente.

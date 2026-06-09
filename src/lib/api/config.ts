@@ -1,5 +1,5 @@
 /** URL base da API — sem barra no final. */
-const PRODUCTION_API_FALLBACK = 'https://taskio-api-0vtm.onrender.com';
+const PRODUCTION_API_FALLBACK = 'https://taskio-api-6vta.onrender.com';
 
 function normalizeBaseUrl(url: string): string {
   return url.trim().replace(/\/$/, '');
