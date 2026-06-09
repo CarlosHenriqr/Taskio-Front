@@ -68,16 +68,52 @@ frontend/src/
 
 ## Deploy (Cloudflare Pages)
 
-1. Conecte o repo [Taskio-Front](https://github.com/CarlosHenriqr/Taskio-Front) em **Workers & Pages → Create → Pages → Git**.
-2. Build settings:
-   - **Framework preset:** Vite
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-   - **Node.js version:** 20 (`.node-version`)
-3. **Environment variables** (Production):
-   - `VITE_API_URL` = URL pública da API (ex.: `https://api.seudominio.com`)
-4. O arquivo `public/_redirects` garante que rotas do React Router funcionem (SPA).
-5. Domínio customizado opcional em **Custom domains**.
+Backend em produção: [Taskio-API no Render](https://taskio-api-0vtm.onrender.com) (`https://taskio-api-0vtm.onrender.com`).
+
+### 1. Conectar o repositório
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
+2. Selecione [CarlosHenriqr/Taskio-Front](https://github.com/CarlosHenriqr/Taskio-Front)
+3. Branch: `main`
+
+### 2. Build settings
+
+| Campo | Valor |
+|-------|-------|
+| **Framework preset** | Vite |
+| **Build command** | `npm run build` |
+| **Build output directory** | `dist` |
+| **Node.js version** | `20` (`.node-version`) |
+
+### 3. Variáveis de ambiente (Production)
+
+| Key | Value |
+|-----|-------|
+| `VITE_API_URL` | `https://taskio-api-0vtm.onrender.com` |
+
+> O Vite lê `VITE_*` **no build**. Se mudar a URL da API, faça **Retry deployment** no Pages.
+
+### 4. CORS no backend (Render)
+
+No serviço **taskio-api** (Render) → **Environment**:
+
+| Key | Value |
+|-----|-------|
+| `FRONTEND_URL` | URL do Cloudflare Pages (ex.: `https://taskio-front.pages.dev`) |
+
+Salve e aguarde o redeploy do backend.
+
+### 5. SPA e assets
+
+- `public/_redirects` — rotas do React Router (`/login`, `/empresa/*`, etc.)
+- `public/_headers` — headers de segurança e cache de assets
+- `wrangler.toml` — referência para deploy via Wrangler CLI (opcional)
+
+### 6. Deploy
+
+Clique **Save and Deploy**. A URL será algo como `https://taskio-front.pages.dev`.
+
+Domínio customizado opcional em **Custom domains**.
 
 ## Design System
 
