@@ -85,15 +85,20 @@ Backend em produção: [Taskio-API no Render](https://taskio-api-6vta.onrender.c
 | **Build output directory** | `dist` |
 | **Node.js version** | `20` (`.node-version`) |
 
-### 3. Variáveis de ambiente (Production) — **obrigatório**
+### 3. URL da API no build
 
-No Dashboard → **Settings** → **Environment variables** → **Add**:
+O Vite precisa de `VITE_API_URL` **durante o build**. Este repo já define em:
 
-| Key | Value | Environment |
-|-----|-------|-------------|
-| `VITE_API_URL` | `https://taskio-api-6vta.onrender.com` | **Production** (e Preview) |
+- `.env.production` (commitado)
+- `wrangler.toml` → `[vars]`
 
-> Se o log mostrar `Build environment variables: (none found)`, a API não foi embutida no build. Adicione a variável e clique **Retry deployment**.
+Opcional no Dashboard (**Variables and secrets**): mesma URL, se quiser sobrescrever sem commit.
+
+| Key | Value |
+|-----|-------|
+| `VITE_API_URL` | `https://taskio-api-6vta.onrender.com` |
+
+> Se o log do Pages mostrar `Build environment variables: (none found)`, ignore — o `.env.production` do repo garante a URL no bundle.
 
 ### 4. SPA (rotas `/login`, `/empresa/*`, etc.)
 

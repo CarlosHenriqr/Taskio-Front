@@ -1,11 +1,9 @@
-# Cloudflare Pages — repo: github.com/CarlosHenriqr/Taskio-Front
+# Cloudflare Pages — github.com/CarlosHenriqr/Taskio-Front
 # Build: npm run build | Output: dist | Node: 20 (.node-version)
-#
-# OBRIGATÓRIO no Dashboard → Settings → Environment variables (Production):
-#   VITE_API_URL = https://taskio-api-6vta.onrender.com
-# Depois de adicionar, clique Retry deployment.
-#
-# SPA: sem 404.html, o Pages serve index.html em rotas do React Router automaticamente.
 name = "taskio-front"
 compatibility_date = "2024-09-23"
 pages_build_output_dir = "./dist"
+
+# Variáveis disponíveis no build (Vite lê VITE_*)
+[vars]
+VITE_API_URL = "https://taskio-api-6vta.onrender.com"
