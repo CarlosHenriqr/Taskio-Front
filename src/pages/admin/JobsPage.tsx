@@ -1,13 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Briefcase, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
 import { Btn, Card, EmptyState } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { TableSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobStatusBadge } from '@/components/shared/StatusBadge';
-import { adminNav } from '@/lib/nav';
 import { adminApi } from '@/lib/api/admin.api';
 import { formatRelativeDate } from '@/lib/utils';
 import { invalidateAdminJobs, invalidatePublicJobs, invalidateCompany } from '@/lib/queryInvalidation';
@@ -35,14 +34,13 @@ export function AdminJobsPage() {
 
   const jobs = query.data ?? [];
 
+  usePageShell({
+    title: 'Vagas',
+    description: 'Modere vagas publicadas na plataforma.',
+  });
+
   return (
-    <AppShell
-      nav={adminNav}
-      subtitle="Admin"
-      title="Vagas"
-      description="Modere vagas publicadas na plataforma."
-    >
-      <PageTransition>
+    <PageTransition>
         {query.isLoading && <TableSkeleton />}
         {query.isError && <ErrorState onRetry={() => query.refetch()} />}
         {!query.isLoading && jobs.length === 0 && (
@@ -91,7 +89,6 @@ export function AdminJobsPage() {
             </div>
           </Card>
         )}
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

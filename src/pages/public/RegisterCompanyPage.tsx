@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Building2, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { AuthSplit } from '@/components/taskio/AuthSplit';
@@ -119,13 +119,13 @@ export function RegisterCompanyPage() {
               />
               <span>
                 Concordo com os{' '}
-                <a className="font-medium text-primary hover:underline" href="#">
-                  Termos de Serviço
-                </a>{' '}
+                <Link to="/termos" className="font-medium text-primary hover:underline" target="_blank">
+                  Termos de Uso
+                </Link>{' '}
                 e a{' '}
-                <a className="font-medium text-primary hover:underline" href="#">
+                <Link to="/privacidade" className="font-medium text-primary hover:underline" target="_blank">
                   Política de Privacidade
-                </a>{' '}
+                </Link>{' '}
                 da TASKIO.
               </span>
             </label>

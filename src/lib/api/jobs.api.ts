@@ -1,5 +1,5 @@
 import { apiRequest } from '@/lib/api/client';
-import type { Job, JobStatus } from '@/types/api';
+import type { Job, JobPaymentType, JobStatus } from '@/types/api';
 
 export type CreateJobPayload = {
   title: string;
@@ -9,6 +9,11 @@ export type CreateJobPayload = {
   expiresAt: string;
   requiredTechnologyIds: string[];
   desirableTechnologyIds: string[];
+  paymentType: JobPaymentType;
+  currency?: string;
+  budgetMin?: number;
+  budgetMax?: number;
+  hourlyRate?: number;
 };
 
 export const jobsApi = {
@@ -19,6 +24,8 @@ export const jobsApi = {
     const qs = q.toString();
     return apiRequest<Job[]>(`/vagas${qs ? `?${qs}` : ''}`, { auth: false });
   },
+
+  listMine: () => apiRequest<Job[]>('/vagas/me'),
 
   getById: (id: string) => apiRequest<Job>(`/vagas/${id}`, { auth: false }),
 

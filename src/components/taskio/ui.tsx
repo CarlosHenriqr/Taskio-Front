@@ -80,7 +80,7 @@ export function Select({ className, children, ...props }: React.SelectHTMLAttrib
   return (
     <select
       className={cn(
-        "h-10 w-full appearance-none rounded-md border border-input bg-surface bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236b7280%22 stroke-width=%222.5%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:12px] bg-[position:right_0.75rem_center] bg-no-repeat px-3 pr-9 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20",
+        "h-10 w-full appearance-none rounded-lg border border-border/70 bg-surface bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236b7280%22 stroke-width=%222.5%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:12px] bg-[position:right_0.75rem_center] bg-no-repeat px-3 pr-9 text-sm outline-none transition-colors duration-200 hover:border-primary/25 focus:border-primary focus:ring-1 focus:ring-primary/20",
         className
       )}
       {...props}
@@ -91,9 +91,22 @@ export function Select({ className, children, ...props }: React.SelectHTMLAttrib
 }
 
 /* ---------- Card ---------- */
-export function Card({ className, children, as: As = "div" }: { className?: string; children: ReactNode; as?: keyof React.JSX.IntrinsicElements }) {
+export function Card({
+  className,
+  children,
+  as: As = "div",
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & {
+  className?: string;
+  children: ReactNode;
+  as?: keyof React.JSX.IntrinsicElements;
+}) {
   const Component = As as React.ElementType;
-  return <Component className={cn("rounded-lg border bg-card", className)}>{children}</Component>;
+  return (
+    <Component className={cn("rounded-xl border border-border/70 bg-card shadow-sm", className)} {...props}>
+      {children}
+    </Component>
+  );
 }
 
 /* ---------- Badge ---------- */
@@ -125,17 +138,17 @@ export function StatCard({ label, value, delta, deltaTone = "success", icon: Ico
   hint?: string;
 }) {
   return (
-    <Card className="p-5 transition-colors duration-150 hover:bg-surface-muted/50">
+    <Card className="p-5 transition-all duration-200 hover:border-primary/20 hover:bg-surface-muted/30 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
         {Icon && (
-          <div className="grid h-8 w-8 place-items-center rounded-md bg-primary/6 text-primary">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-primary/10">
             <Icon className="h-4 w-4" />
           </div>
         )}
       </div>
-      <div className="mt-3 flex items-baseline gap-2">
-        <p className="font-display text-3xl font-bold tracking-tighter">{value}</p>
+      <div className="mt-4 flex items-baseline gap-2">
+        <p className="font-display text-3xl font-bold tracking-tight text-foreground">{value}</p>
         {delta && (
           <span className={cn(
             "font-mono text-[10px] font-medium",
@@ -153,10 +166,12 @@ export function StatCard({ label, value, delta, deltaTone = "success", icon: Ico
 /* ---------- EmptyState ---------- */
 export function EmptyState({ icon: Icon, title, description, action }: { icon: React.ComponentType<{ className?: string }>; title: string; description?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-surface px-6 py-16 text-center">
-      <div className="grid h-11 w-11 place-items-center rounded-md bg-primary/6 text-primary"><Icon className="h-5 w-5" /></div>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-surface-muted/30 px-6 py-16 text-center">
+      <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary/8 text-primary ring-1 ring-primary/10">
+        <Icon className="h-5 w-5" />
+      </div>
       <h3 className="mt-4 font-display text-lg font-semibold tracking-tight">{title}</h3>
-      {description && <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">{description}</p>}
+      {description && <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
   );

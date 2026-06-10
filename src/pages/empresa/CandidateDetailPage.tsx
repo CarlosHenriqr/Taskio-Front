@@ -1,34 +1,63 @@
 import { Link, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink, Mail, Phone } from 'lucide-react';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Btn, Card } from '@/components/taskio/ui';
+import { Btn } from '@/components/taskio/ui';
+import { AvatarBadge, ContentPanel, TechPill } from '@/components/shared/ContentCards';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
+import { CompletionConfirmationCard } from '@/components/shared/CompletionConfirmationCard';
+import { ReviewForm } from '@/components/shared/ReviewForm';
 import { MatchScoreBadge, MatchScoreBar } from '@/components/shared/MatchScoreBadge';
 import { ApplicationActions } from '@/components/empresa/ApplicationActions';
-import { empresaNav } from '@/lib/nav';
-import { useAuth } from '@/contexts/AuthContext';
 import { findCompanyApplication } from '@/lib/companyJobs';
 import { profileApi } from '@/lib/api/profile.api';
+import { reviewsApi } from '@/lib/api/reviews.api';
 import { computeSkillMatch } from '@/lib/matching.util';
+import { invalidateApplications } from '@/lib/queryInvalidation';
 import { getInitials, formatRelativeDate } from '@/lib/utils';
 
 export function EmpresaCandidateDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const detailQuery = useQuery({
     queryKey: ['company', 'application', id],
-    queryFn: () => findCompanyApplication(user!.id, id!),
-    enabled: !!user?.id && !!id,
+    queryFn: () => findCompanyApplication(id!),
+    enabled: !!id,
   });
 
   const application = detailQuery.data?.application;
   const job = detailQuery.data?.job;
+  const candidateName = application?.user?.name ?? 'Candidato';
+
+  usePageShell({
+    title: application ? 'Perfil do candidato' : 'Candidato',
+    actions: application ? (
+      <Link to="/empresa/candidatos">
+        <Btn variant="secondary" size="sm">
+          <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+        </Btn>
+      </Link>
+    ) : undefined,
+  });
+
+  const reviewStatusQuery = useQuery({
+    queryKey: ['reviews', 'application', id],
+    queryFn: () => reviewsApi.applicationStatus(id!),
+    enabled: !!id && application?.status === 'COMPLETED',
+  });
+
+  const refreshApplication = async () => {
+    await invalidateApplications(queryClient);
+    const result = await detailQuery.refetch();
+    if (result.data?.application?.status === 'COMPLETED') {
+      await queryClient.invalidateQueries({ queryKey: ['reviews', 'application', id] });
+    }
+  };
 
   const candidateUserId = application?.userId ?? application?.user?.id;
 
@@ -57,45 +86,22 @@ export function EmpresaCandidateDetailPage() {
   }, [application, job, profile]);
 
   if (detailQuery.isLoading) {
-    return (
-      <AppShell nav={empresaNav} subtitle="Empresa" title="Candidato" primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}>
-        <PageLoader />
-      </AppShell>
-    );
+    return <PageLoader />;
   }
 
   if (detailQuery.isError || !application) {
-    return (
-      <AppShell nav={empresaNav} subtitle="Empresa" title="Candidato" primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}>
-        <ErrorState title="Candidatura não encontrada" onRetry={() => detailQuery.refetch()} />
-      </AppShell>
-    );
+    return <ErrorState title="Candidatura não encontrada" onRetry={() => detailQuery.refetch()} />;
   }
 
-  const candidateName = application.user?.name ?? 'Candidato';
-
   return (
-    <AppShell
-      nav={empresaNav}
-      subtitle="Empresa"
-      primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}
-      title="Perfil do candidato"
-      actions={
-        <Link to="/empresa/candidatos">
-          <Btn variant="secondary" size="sm">
-            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-          </Btn>
-        </Link>
-      }
-    >
-      <PageTransition>
+    <PageTransition>
         <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-5">
-            <Card className="p-6">
+            <ContentPanel>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="grid h-20 w-20 place-items-center rounded-lg bg-primary text-2xl font-bold text-primary-foreground">
+                <AvatarBadge className="h-20 w-20 text-2xl">
                   {getInitials(candidateName)}
-                </div>
+                </AvatarBadge>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-display text-2xl font-bold tracking-tight">{candidateName}</h2>
@@ -128,27 +134,24 @@ export function EmpresaCandidateDetailPage() {
                   )}
                 </div>
               </div>
-            </Card>
+            </ContentPanel>
 
             {application.coverLetter && (
-              <Card className="p-6">
-                <h3 className="font-display text-lg font-semibold">Carta de apresentação</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+              <ContentPanel title="Carta de apresentação">
+                <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
                   {application.coverLetter}
                 </p>
-              </Card>
+              </ContentPanel>
             )}
 
             {profile?.bio && (
-              <Card className="p-6">
-                <h3 className="font-display text-lg font-semibold">Sobre</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>
-              </Card>
+              <ContentPanel title="Sobre">
+                <p className="text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>
+              </ContentPanel>
             )}
 
             {profile?.experiences && profile.experiences.length > 0 && (
-              <Card className="p-6">
-                <h3 className="font-display text-lg font-semibold">Experiência profissional</h3>
+              <ContentPanel title="Experiência profissional">
                 <ol className="mt-4 space-y-5 border-l-2 border-border pl-5">
                   {profile.experiences.map((e) => (
                     <li key={e.id} className="relative">
@@ -167,25 +170,21 @@ export function EmpresaCandidateDetailPage() {
                     </li>
                   ))}
                 </ol>
-              </Card>
+              </ContentPanel>
             )}
           </div>
 
           <aside className="space-y-5">
-            <Card className="p-6">
-              <h3 className="font-display font-semibold">Compatibilidade</h3>
+            <ContentPanel title="Compatibilidade">
               <MatchScoreBar score={matchData.matchPercent} className="mt-3" />
               {!!matchData.matchedTechnologies.length && (
                 <div className="mt-4">
                   <p className="text-xs font-medium text-muted-foreground">Tecnologias em comum</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {matchData.matchedTechnologies.map((tech) => (
-                      <span
-                        key={tech}
-                        className="rounded-md border border-primary/30 bg-primary/5 px-2 py-0.5 text-xs font-medium"
-                      >
+                      <TechPill key={tech} highlight>
                         {tech}
-                      </span>
+                      </TechPill>
                     ))}
                   </div>
                 </div>
@@ -195,45 +194,54 @@ export function EmpresaCandidateDetailPage() {
                   Nenhuma tecnologia da vaga encontrada no perfil do candidato.
                 </p>
               )}
-            </Card>
+            </ContentPanel>
 
-            <Card className="p-6">
-              <h3 className="font-display font-semibold">Decisão</h3>
-              <div className="mt-4">
-                <ApplicationActions
-                  applicationId={application.id}
-                  status={application.status}
-                  candidateName={candidateName}
-                  onSuccess={() => detailQuery.refetch()}
-                />
-              </div>
-            </Card>
+            <ContentPanel title="Decisão">
+              <ApplicationActions
+                applicationId={application.id}
+                status={application.status}
+                candidateName={candidateName}
+                onSuccess={() => detailQuery.refetch()}
+              />
+            </ContentPanel>
 
-            <Card className="p-6">
-              <h3 className="font-display font-semibold">Vaga</h3>
-              <p className="mt-2 font-medium">{job?.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground line-clamp-4">{job?.description}</p>
-            </Card>
+            {application.status === 'ACCEPTED' && (
+              <CompletionConfirmationCard
+                application={application}
+                viewerRole="company"
+                onSuccess={refreshApplication}
+              />
+            )}
+
+            {application.status === 'COMPLETED' && (
+              <ReviewForm
+                applicationId={application.id}
+                title="Avaliar freelancer"
+                reviewStatus={reviewStatusQuery.data}
+                isLoading={reviewStatusQuery.isLoading}
+                onSuccess={refreshApplication}
+              />
+            )}
+
+            <ContentPanel title="Vaga">
+              <p className="font-medium">{job?.title}</p>
+              <p className="mt-1 line-clamp-4 text-xs leading-relaxed text-muted-foreground">
+                {job?.description}
+              </p>
+            </ContentPanel>
 
             {profile?.techStack && profile.techStack.length > 0 && (
-              <Card className="p-6">
-                <h3 className="font-display font-semibold">Stack</h3>
-                <div className="mt-3 flex flex-wrap gap-1.5">
+              <ContentPanel title="Stack">
+                <div className="flex flex-wrap gap-1.5">
                   {profile.techStack.map((s) => (
-                    <span
-                      key={s.technology.id}
-                      className="rounded-md border bg-surface-muted px-2 py-0.5 text-xs font-medium"
-                    >
-                      {s.technology.name}
-                    </span>
+                    <TechPill key={s.technology.id}>{s.technology.name}</TechPill>
                   ))}
                 </div>
-              </Card>
+              </ContentPanel>
             )}
 
             {profile?.portfolio && profile.portfolio.length > 0 && (
-              <Card className="p-6">
-                <h3 className="font-display font-semibold">Portfólio</h3>
+              <ContentPanel title="Portfólio">
                 <div className="mt-3 space-y-2">
                   {profile.portfolio.map((p) => (
                     <div key={p.id} className="rounded-lg border p-3">
@@ -251,11 +259,10 @@ export function EmpresaCandidateDetailPage() {
                     </div>
                   ))}
                 </div>
-              </Card>
+              </ContentPanel>
             )}
           </aside>
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

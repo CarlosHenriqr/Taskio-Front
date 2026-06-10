@@ -18,7 +18,7 @@ export function AuthSplit({ children, title = "Junte-se à TASKIO", subtitle = "
             <p className="mt-4 max-w-md text-sm text-white/60">{subtitle}</p>
             <div className="mt-10 space-y-5">
               {[
-                { icon: Sparkles, t: "Acesso a projetos premium", d: "Conecte-se com startups e enterprises buscando especialização real." },
+                { icon: Sparkles, t: "Acesso a projetos de tecnologia", d: "Conecte-se com startups e empresas buscando especialização real." },
                 { icon: ShieldCheck, t: "Verificação técnica", d: "Cada perfil passa por validação via repositórios e provas práticas." },
                 { icon: Lock, t: "Trilha de entregas", d: "Milestones, reviews e status documentados em um só lugar." },
               ].map((f) => (

@@ -7,6 +7,8 @@ import { NotificationDropdown } from './NotificationDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationsApi } from '@/lib/api/notifications.api';
 import { profileApi } from '@/lib/api/profile.api';
+import { NOTIFICATION_POLL_MS, STALE_TIME } from '@/lib/queryConfig';
+import { queryKeys } from '@/lib/queryKeys';
 import { getInitials } from '@/lib/utils';
 
 export type NavItem = { label: string; to: string; icon: LucideIcon; badge?: string };
@@ -33,17 +35,21 @@ export function AppShell({
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
 
+  const shellEnabled = !!user && (user.type === 'user' || user.type === 'company');
+
   const { data: unread } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: queryKeys.notifications.unreadCount,
     queryFn: () => notificationsApi.unreadCount(),
-    refetchInterval: 30000,
-    enabled: !!user && (user.type === 'user' || user.type === 'company'),
+    refetchInterval: NOTIFICATION_POLL_MS,
+    staleTime: STALE_TIME.notifications,
+    enabled: shellEnabled,
   });
 
   const { data: profile } = useQuery({
-    queryKey: ['profile', 'me'],
+    queryKey: queryKeys.profile.me,
     queryFn: () => profileApi.me(),
-    enabled: !!user && (user.type === 'user' || user.type === 'company'),
+    staleTime: STALE_TIME.profile,
+    enabled: shellEnabled,
   });
 
   const accountPath =
@@ -86,7 +92,7 @@ export function AppShell({
         <Logo subtitle={subtitle} />
         <div className="flex items-center gap-2">
           {showNotifications && notificationsPath && (
-            <NotificationDropdown allPath={notificationsPath} />
+            <NotificationDropdown allPath={notificationsPath} unreadCount={unreadCount} />
           )}
           <button
             onClick={() => setOpen(true)}
@@ -213,7 +219,7 @@ export function AppShell({
         <main className="min-w-0 flex-1">
           {showNotifications && notificationsPath && (
             <div className="sticky top-0 z-20 hidden border-b bg-surface/90 backdrop-blur-xl lg:flex lg:justify-end lg:px-8 lg:py-3">
-              <NotificationDropdown allPath={notificationsPath} />
+              <NotificationDropdown allPath={notificationsPath} unreadCount={unreadCount} />
             </div>
           )}
 

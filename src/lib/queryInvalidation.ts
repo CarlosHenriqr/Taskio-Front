@@ -13,6 +13,26 @@ export async function invalidateCompany(queryClient: QueryClient): Promise<void>
   await queryClient.invalidateQueries({ queryKey: queryKeys.company.all });
 }
 
+export async function invalidateCompanyJobs(
+  queryClient: QueryClient,
+  userId?: string,
+): Promise<void> {
+  if (userId) {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.company.jobs(userId) });
+  } else {
+    await queryClient.invalidateQueries({ queryKey: ['company', 'jobs'] });
+  }
+}
+
+export async function invalidateCompanyApplications(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['company', 'applications'] }),
+    queryClient.invalidateQueries({ queryKey: ['company', 'all-applications'] }),
+    queryClient.invalidateQueries({ queryKey: ['company', 'application'] }),
+    queryClient.invalidateQueries({ queryKey: ['company', 'job-applications'] }),
+  ]);
+}
+
 export async function invalidatePublicJobs(queryClient: QueryClient): Promise<void> {
   await queryClient.invalidateQueries({ queryKey: queryKeys.jobs.all });
 }
@@ -20,7 +40,7 @@ export async function invalidatePublicJobs(queryClient: QueryClient): Promise<vo
 export async function invalidateApplications(queryClient: QueryClient): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: queryKeys.applications.all }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.company.all }),
+    invalidateCompanyApplications(queryClient),
   ]);
 }
 
@@ -30,7 +50,7 @@ export async function invalidateMatching(queryClient: QueryClient): Promise<void
 
 export async function invalidateAfterJobPublish(queryClient: QueryClient): Promise<void> {
   await Promise.all([
-    invalidateCompany(queryClient),
+    invalidateCompanyJobs(queryClient),
     invalidatePublicJobs(queryClient),
     invalidateMatching(queryClient),
   ]);

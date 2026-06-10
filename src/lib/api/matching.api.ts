@@ -20,4 +20,10 @@ export const matchingApi = {
     );
     return data.map((candidate) => withNormalizedMatch(candidate));
   },
+
+  expressHiringInterest: (jobId: string, userId: string) =>
+    apiRequest<{ jobId: string; jobTitle: string; candidateUserId: string; candidateName: string }>(
+      `/matching/jobs/${jobId}/candidates/${userId}/interest`,
+      { method: 'POST' },
+    ),
 };

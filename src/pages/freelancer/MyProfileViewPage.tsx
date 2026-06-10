@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Pencil, Mail, Phone, Star, ExternalLink } from 'lucide-react';
-import { AppShell } from '@/components/taskio/AppShell';
 import { Btn, Card, Badge } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { freelancerNav } from '@/lib/nav';
 import { profileApi } from '@/lib/api/profile.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { getInitials } from '@/lib/utils';
@@ -28,20 +27,28 @@ export function MyProfileViewPage() {
     queryFn: () => reviewsApi.received(1, 5),
   });
 
+  usePageShell({
+    title: 'Meu perfil',
+    description:
+      profileQuery.isFetching && !profileQuery.isLoading
+        ? 'Atualizando perfil…'
+        : 'Como empresas e o sistema de matching enxergam seu perfil.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    actions: profileQuery.data ? (
+      <Link to="/freelancer/perfil/editar">
+        <Btn size="sm">
+          <Pencil className="h-3.5 w-3.5" /> Editar perfil
+        </Btn>
+      </Link>
+    ) : undefined,
+  });
+
   if (profileQuery.isLoading) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Meu perfil" primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}>
-        <PageLoader />
-      </AppShell>
-    );
+    return <PageLoader />;
   }
 
   if (profileQuery.isError) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Meu perfil" primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}>
-        <ErrorState onRetry={() => profileQuery.refetch()} />
-      </AppShell>
-    );
+    return <ErrorState onRetry={() => profileQuery.refetch()} />;
   }
 
   const profile = profileQuery.data!;
@@ -60,25 +67,7 @@ export function MyProfileViewPage() {
     !profile.resumeUrl?.trim();
 
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
-      title="Meu perfil"
-      description={
-        profileQuery.isFetching && !profileQuery.isLoading
-          ? 'Atualizando perfil…'
-          : 'Como empresas e o sistema de matching enxergam seu perfil.'
-      }
-      actions={
-        <Link to="/freelancer/perfil/editar">
-          <Btn size="sm">
-            <Pencil className="h-3.5 w-3.5" /> Editar perfil
-          </Btn>
-        </Link>
-      }
-    >
-      <PageTransition>
+    <PageTransition>
         {profileIncomplete && (
           <Card className="mb-5 border-primary/20 bg-primary/5 p-4">
             <p className="text-sm text-foreground">
@@ -323,7 +312,6 @@ export function MyProfileViewPage() {
             </Link>
           </aside>
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

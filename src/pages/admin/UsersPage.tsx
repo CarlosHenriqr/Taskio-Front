@@ -2,19 +2,20 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, Ban, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Btn, Card, EmptyState, Select } from '@/components/taskio/ui';
+import { Btn, Card, EmptyState } from '@/components/taskio/ui';
+import { FilterBar } from '@/components/shared/ContentCards';
+import { UserTypeFilter, type UserTypeFilterValue } from '@/components/shared/filters/userTypeFilter';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { TableSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { adminNav } from '@/lib/nav';
 import { adminApi } from '@/lib/api/admin.api';
 import { formatRelativeDate } from '@/lib/utils';
 import { invalidateAdminUsers } from '@/lib/queryInvalidation';
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
-  const [type, setType] = useState<'user' | 'company'>('user');
+  const [type, setType] = useState<UserTypeFilterValue>('user');
 
   const query = useQuery({
     queryKey: ['admin', 'users', type],
@@ -33,24 +34,16 @@ export function AdminUsersPage() {
 
   const users = query.data ?? [];
 
+  usePageShell({
+    title: 'Usuários',
+    description: 'Gerencie freelancers e empresas da plataforma.',
+  });
+
   return (
-    <AppShell
-      nav={adminNav}
-      subtitle="Admin"
-      title="Usuários"
-      description="Gerencie freelancers e empresas da plataforma."
-    >
-      <PageTransition>
-        <Card className="mb-5 p-4">
-          <Select
-            className="sm:w-48"
-            value={type}
-            onChange={(e) => setType(e.target.value as 'user' | 'company')}
-          >
-            <option value="user">Freelancers</option>
-            <option value="company">Empresas</option>
-          </Select>
-        </Card>
+    <PageTransition>
+        <FilterBar trailing={`${users.length} usuário${users.length === 1 ? '' : 's'}`}>
+          <UserTypeFilter value={type} onChange={setType} />
+        </FilterBar>
 
         {query.isLoading && <TableSkeleton />}
         {query.isError && <ErrorState onRetry={() => query.refetch()} />}
@@ -116,7 +109,6 @@ export function AdminUsersPage() {
             </div>
           </Card>
         )}
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

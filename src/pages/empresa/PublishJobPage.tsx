@@ -3,11 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Info, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Btn, Card, Chip, Field, TextArea, TextInput } from '@/components/taskio/ui';
+import { Btn, Card, Field, TextArea, TextInput } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
-import { empresaNav } from '@/lib/nav';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { technologiesApi } from '@/lib/api/technologies.api';
 import { ApiRequestError } from '@/lib/api/client';
@@ -16,8 +15,11 @@ import {
   toIsoDateTimeLocal,
   validatePublishJobForm,
 } from '@/lib/publishJobValidation';
+import { JobPaymentFields } from '@/components/empresa/JobPaymentFields';
+import { TechStackPicker } from '@/components/empresa/TechStackPicker';
+import { formatJobPayment, toJobPaymentPayload } from '@/lib/jobPayment';
 import { invalidateAfterJobPublish } from '@/lib/queryInvalidation';
-import type { Technology } from '@/types/api';
+import type { JobPaymentType, Technology } from '@/types/api';
 
 export function EmpresaPublishPage() {
   const navigate = useNavigate();
@@ -29,6 +31,10 @@ export function EmpresaPublishPage() {
   const [expiresAt, setExpiresAt] = useState('');
   const [requiredIds, setRequiredIds] = useState<string[]>([]);
   const [desirableIds, setDesirableIds] = useState<string[]>([]);
+  const [paymentType, setPaymentType] = useState<JobPaymentType | ''>('');
+  const [budgetMin, setBudgetMin] = useState('');
+  const [budgetMax, setBudgetMax] = useState('');
+  const [hourlyRate, setHourlyRate] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const techQuery = useQuery({
@@ -52,6 +58,7 @@ export function EmpresaPublishPage() {
         expiresAt: toIsoDateTimeLocal(expiresAt),
         requiredTechnologyIds: requiredIds,
         desirableTechnologyIds: desirableIds,
+        ...toJobPaymentPayload({ paymentType, budgetMin, budgetMax, hourlyRate }),
       }),
     onSuccess: async () => {
       await invalidateAfterJobPublish(queryClient);
@@ -75,6 +82,10 @@ export function EmpresaPublishPage() {
       expiresAt,
       requiredIds,
       desirableIds,
+      paymentType,
+      budgetMin,
+      budgetMax,
+      hourlyRate,
     });
     setErrors(fieldErrors);
     if (Object.keys(fieldErrors).length > 0) {
@@ -108,35 +119,33 @@ export function EmpresaPublishPage() {
     submitPublish();
   };
 
+  usePageShell({
+    title: 'Publicar projeto',
+    description: 'Defina escopo e requisitos para receber candidatos compatíveis.',
+    actions: (
+      <>
+        <Link to="/empresa/projetos">
+          <Btn variant="secondary" size="sm">
+            Cancelar
+          </Btn>
+        </Link>
+        <Btn
+          size="sm"
+          type="submit"
+          form="publish-job-form"
+          disabled={createMutation.isPending || techQuery.isError}
+        >
+          {createMutation.isPending ? 'Publicando...' : 'Publicar projeto'}{' '}
+          {!createMutation.isPending && <ArrowRight className="h-3.5 w-3.5" />}
+        </Btn>
+      </>
+    ),
+  });
+
   if (techQuery.isLoading) return <PageLoader />;
 
   return (
-    <AppShell
-      nav={empresaNav}
-      subtitle="Empresa"
-      primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}
-      title="Publicar projeto"
-      description="Defina escopo e requisitos para receber candidatos compatíveis."
-      actions={
-        <>
-          <Link to="/empresa/projetos">
-            <Btn variant="secondary" size="sm">
-              Cancelar
-            </Btn>
-          </Link>
-          <Btn
-            size="sm"
-            type="submit"
-            form="publish-job-form"
-            disabled={createMutation.isPending || techQuery.isError}
-          >
-            {createMutation.isPending ? 'Publicando...' : 'Publicar projeto'}{' '}
-            {!createMutation.isPending && <ArrowRight className="h-3.5 w-3.5" />}
-          </Btn>
-        </>
-      }
-    >
-      <PageTransition>
+    <PageTransition>
         <form id="publish-job-form" onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-5">
             <Card className="flex gap-3 border-primary/20 bg-primary/5 p-4 text-sm">
@@ -178,49 +187,43 @@ export function EmpresaPublishPage() {
                     />
                   </Field>
                 </div>
-                <Field label="Stack tecnológica (obrigatória)" hint="Clique para marcar como obrigatória" error={errors.technologies}>
-                  <div className="flex flex-wrap gap-2">
-                    {techs.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => toggleTech(t.id, 'required')}
-                        className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                          requiredIds.includes(t.id)
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'bg-surface-muted hover:bg-accent'
-                        }`}
-                      >
-                        {t.name}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {selectedTechs(requiredIds).map((t) => (
-                      <Chip key={t.id} onRemove={() => toggleTech(t.id, 'required')}>
-                        {t.name}
-                      </Chip>
-                    ))}
-                  </div>
-                </Field>
-                <Field label="Stack desejável">
-                  <div className="flex flex-wrap gap-2">
-                    {techs.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => toggleTech(t.id, 'desirable')}
-                        className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                          desirableIds.includes(t.id)
-                            ? 'border-info bg-info/10 text-info'
-                            : 'bg-surface-muted hover:bg-accent'
-                        }`}
-                      >
-                        {t.name}
-                      </button>
-                    ))}
-                  </div>
-                </Field>
+                <TechStackPicker
+                  label="Stack tecnológica (obrigatória)"
+                  hint="Clique para marcar como obrigatória"
+                  error={errors.technologies}
+                  technologies={techs}
+                  selectedIds={requiredIds}
+                  variant="required"
+                  onToggle={(id) => toggleTech(id, 'required')}
+                />
+                <TechStackPicker
+                  label="Stack desejável"
+                  hint="Tecnologias que agregam, mas não são obrigatórias"
+                  technologies={techs}
+                  selectedIds={desirableIds}
+                  variant="desirable"
+                  onToggle={(id) => toggleTech(id, 'desirable')}
+                  showChips={false}
+                />
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-display font-semibold">Orçamento estimado</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Informe quanto você pretende investir no projeto.
+              </p>
+              <div className="mt-5">
+                <JobPaymentFields
+                  values={{ paymentType, budgetMin, budgetMax, hourlyRate }}
+                  errors={errors}
+                  onChange={(patch) => {
+                    if (patch.paymentType !== undefined) setPaymentType(patch.paymentType);
+                    if (patch.budgetMin !== undefined) setBudgetMin(patch.budgetMin);
+                    if (patch.budgetMax !== undefined) setBudgetMax(patch.budgetMax);
+                    if (patch.hourlyRate !== undefined) setHourlyRate(patch.hourlyRate);
+                  }}
+                />
               </div>
             </Card>
 
@@ -266,13 +269,24 @@ export function EmpresaPublishPage() {
                   {title || 'Título da vaga'}
                 </p>
                 <p className="text-xs text-muted-foreground">Sua empresa</p>
+                {paymentType && (
+                  <p className="mt-1 text-xs font-medium text-primary">
+                    {formatJobPayment({
+                      paymentType,
+                      budgetMin: budgetMin ? Number(budgetMin) : null,
+                      budgetMax: budgetMax ? Number(budgetMax) : null,
+                      hourlyRate: hourlyRate ? Number(hourlyRate) : null,
+                      currency: 'BRL',
+                    }) ?? 'Informe os valores de pagamento'}
+                  </p>
+                )}
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {selectedTechs(requiredIds)
                     .slice(0, 4)
                     .map((t) => (
                       <span
                         key={t.id}
-                        className="rounded border bg-surface px-2 py-0.5 text-[10px] font-medium"
+                        className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
                       >
                         {t.name}
                       </span>
@@ -282,7 +296,6 @@ export function EmpresaPublishPage() {
             </Card>
           </aside>
         </form>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom';
-import { Clock } from 'lucide-react';
-import { Card, Btn } from '@/components/taskio/ui';
+import { Building2, Clock } from 'lucide-react';
+import { Btn } from '@/components/taskio/ui';
 import { JobStatusBadge } from '@/components/shared/StatusBadge';
 import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
+import { MetaChip, TechPill, interactiveCardClass } from '@/components/shared/ContentCards';
 import type { Job } from '@/types/api';
 import { formatRelativeDate } from '@/lib/utils';
 import { getJobDescriptionPreview } from '@/lib/jobDescription.util';
+import { formatJobPayment } from '@/lib/jobPayment';
+import { cn } from '@/lib/utils';
 
 export function JobCard({
   job,
@@ -20,48 +23,50 @@ export function JobCard({
   onApply?: () => void;
   matchPercent?: number;
 }) {
-  const stack =
-    job.technologies?.map((t) => t.technology.name) ??
-    [];
+  const stack = job.technologies?.map((t) => t.technology.name) ?? [];
+  const paymentLabel = formatJobPayment(job);
 
   return (
-    <Card className="group p-5 transition-all duration-200 hover:-translate-y-px hover:border-primary/20 hover:bg-surface-muted/30">
-      <div className="flex items-start justify-between gap-3">
+    <article className={cn(interactiveCardClass, 'group p-5 hover:-translate-y-0.5')}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-semibold text-foreground">
-              {job.company?.name ?? 'Empresa'}
-            </span>
-            <span className="text-border">/</span>
-            <Clock className="h-3 w-3" />
-            {formatRelativeDate(job.createdAt)}
+          <div className="flex flex-wrap items-center gap-2">
+            <MetaChip icon={Building2}>{job.company?.name ?? 'Empresa'}</MetaChip>
+            <MetaChip icon={Clock}>{formatRelativeDate(job.createdAt)}</MetaChip>
             {matchPercent !== undefined && (
               <MatchScoreBadge score={matchPercent} suffix="compatível" />
             )}
           </div>
+
           <Link
             to={detailPath}
-            className="mt-1.5 block font-display text-lg font-semibold tracking-tight transition-colors hover:text-primary"
+            className="mt-3 block font-display text-lg font-semibold tracking-tight transition-colors group-hover:text-primary"
           >
             {job.title}
           </Link>
-          <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
             {getJobDescriptionPreview(job.description)}
           </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {stack.slice(0, 5).map((s) => (
-              <span
-                key={s}
-                className="rounded border bg-surface-muted px-2 py-0.5 font-mono text-[10px] font-medium"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
+
+          {paymentLabel && (
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary">
+              {paymentLabel}
+            </p>
+          )}
+
+          {stack.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {stack.slice(0, 5).map((s) => (
+                <TechPill key={s}>{s}</TechPill>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="flex flex-col items-end gap-2">
+
+        <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
           <JobStatusBadge status={job.status} />
-          <div className="mt-1 flex gap-2">
+          <div className="flex gap-2 sm:mt-2">
             <Link to={detailPath}>
               <Btn variant="secondary" size="sm">
                 Detalhes
@@ -75,6 +80,6 @@ export function JobCard({
           </div>
         </div>
       </div>
-    </Card>
+    </article>
   );
 }

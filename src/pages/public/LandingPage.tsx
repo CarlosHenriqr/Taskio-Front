@@ -22,10 +22,6 @@ const FAQ_ITEMS = [
     a: 'A TASKIO é uma plataforma que conecta empresas a profissionais de tecnologia verificados. Empresas publicam projetos com escopo e stack definidos; freelancers encontram vagas compatíveis e gerenciam candidaturas, entregas e avaliações em um único workspace.',
   },
   {
-    q: 'A plataforma é gratuita?',
-    a: 'Você pode criar conta e publicar sua primeira vaga sem custo inicial. Planos e limites adicionais podem variar conforme o volume de projetos e recursos da sua operação — consulte a seção de planos ou entre em contato para volumes corporativos.',
-  },
-  {
     q: 'Como funciona o matching de candidatos?',
     a: 'O motor de compatibilidade cruza a stack exigida no projeto com o perfil técnico do freelancer — tecnologias, experiência e histórico. Quanto mais completo o perfil e a descrição da vaga, mais precisos são os percentuais de match exibidos no painel.',
   },
@@ -85,9 +81,6 @@ export function LandingPage() {
                 <a href="#faq" className="link-underline transition-colors hover:text-foreground">
                   FAQ
                 </a>
-                <a href="#planos" className="link-underline transition-colors hover:text-foreground">
-                  Planos
-                </a>
               </nav>
             </div>
             <div className="flex items-center gap-2">
@@ -98,7 +91,7 @@ export function LandingPage() {
               </Link>
               <Link to="/cadastro/empresa">
                 <Btn size="sm">
-                  Começar grátis
+                  Criar conta
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Btn>
               </Link>
@@ -379,7 +372,7 @@ export function LandingPage() {
         </section>
 
         {/* CTA */}
-        <section id="planos" className="border-b">
+        <section id="cta" className="border-b">
           <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
             <Card className="relative overflow-hidden p-10 lg:p-16">
               <div className="absolute inset-0 bg-mesh opacity-60" />
@@ -390,7 +383,7 @@ export function LandingPage() {
                     Pronto para o próximo projeto?
                   </h2>
                   <p className="mt-3 max-w-xl text-muted-foreground leading-relaxed">
-                    Comece grátis. Publique sua primeira vaga em menos de 5 minutos.
+                    Crie sua conta e publique sua primeira vaga em menos de 5 minutos.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3 lg:justify-end">
@@ -420,12 +413,12 @@ export function LandingPage() {
               <a href="#" className="link-underline transition-colors hover:text-foreground">
                 Status
               </a>
-              <a href="#" className="link-underline transition-colors hover:text-foreground">
+              <Link to="/termos" className="link-underline transition-colors hover:text-foreground">
                 Termos
-              </a>
-              <a href="#" className="link-underline transition-colors hover:text-foreground">
+              </Link>
+              <Link to="/privacidade" className="link-underline transition-colors hover:text-foreground">
                 Privacidade
-              </a>
+              </Link>
             </div>
           </div>
         </footer>

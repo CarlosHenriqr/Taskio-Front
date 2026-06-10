@@ -1,5 +1,7 @@
 import { ApiRequestError } from '@/lib/api/client';
 
+import { validateJobPaymentForm, type JobPaymentFormValues } from '@/lib/jobPayment';
+
 export type PublishJobFormValues = {
   title: string;
   description: string;
@@ -8,7 +10,7 @@ export type PublishJobFormValues = {
   expiresAt: string;
   requiredIds: string[];
   desirableIds: string[];
-};
+} & JobPaymentFormValues;
 
 export function validatePublishJobForm(values: PublishJobFormValues): Record<string, string> {
   const errors: Record<string, string> = {};
@@ -52,6 +54,8 @@ export function validatePublishJobForm(values: PublishJobFormValues): Record<str
     errors.deadline = 'O prazo não pode ser posterior à data de expiração.';
   }
 
+  Object.assign(errors, validateJobPaymentForm(values));
+
   return errors;
 }
 
@@ -67,6 +71,13 @@ export function toIsoDateTimeLocal(value: string): string {
     throw new Error('Data inválida.');
   }
   return date.toISOString();
+}
+
+export function toDateTimeLocalInput(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 const API_CODE_TO_FIELD: Record<string, string> = {

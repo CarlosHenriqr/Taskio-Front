@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Briefcase, FilePlus2, Users, Pause, XCircle } from 'lucide-react';
+import { Briefcase, FilePlus2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Btn, Card, EmptyState, Select, TextInput } from '@/components/taskio/ui';
+import { Btn, EmptyState, TextInput } from '@/components/taskio/ui';
+import { FilterBar } from '@/components/shared/ContentCards';
+import {
+  JobStatusFilter,
+  buildJobStatusCounts,
+  type JobStatusFilterValue,
+} from '@/components/shared/filters/jobStatusFilter';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { JobStatusBadge } from '@/components/shared/StatusBadge';
-import { empresaNav } from '@/lib/nav';
+import { ProjectCard } from '@/components/empresa/ProjectCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompanyJobs } from '@/lib/companyJobs';
 import { jobsApi } from '@/lib/api/jobs.api';
-import { formatRelativeDate } from '@/lib/utils';
 import { invalidateCompany } from '@/lib/queryInvalidation';
 import type { JobStatus } from '@/types/api';
 
@@ -23,11 +27,23 @@ export function EmpresaProjectsPage() {
   const searchInit = searchParams.get('search') ?? '';
   const queryClient = useQueryClient();
   const [search, setSearch] = useState(searchInit);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<JobStatusFilterValue>('');
+
+  usePageShell({
+    title: 'Meus projetos',
+    description: 'Acompanhe status, candidatos e orçamentos.',
+    actions: (
+      <Link to="/empresa/publicar">
+        <Btn size="sm">
+          <FilePlus2 className="h-3.5 w-3.5" /> Novo projeto
+        </Btn>
+      </Link>
+    ),
+  });
 
   const jobsQuery = useQuery({
     queryKey: ['company', 'jobs', user?.id],
-    queryFn: () => fetchCompanyJobs(user!.id),
+    queryFn: () => fetchCompanyJobs(),
     enabled: !!user?.id,
   });
 
@@ -41,7 +57,10 @@ export function EmpresaProjectsPage() {
     onError: () => toast.error('Erro ao atualizar status.'),
   });
 
-  const jobs = (jobsQuery.data ?? []).filter((j) => {
+  const allJobs = jobsQuery.data ?? [];
+  const statusCounts = useMemo(() => buildJobStatusCounts(allJobs), [allJobs]);
+
+  const jobs = allJobs.filter((j) => {
     const matchSearch =
       !search ||
       j.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -51,41 +70,24 @@ export function EmpresaProjectsPage() {
   });
 
   return (
-    <AppShell
-      nav={empresaNav}
-      subtitle="Empresa"
-      primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}
-      title="Meus projetos"
-      description="Acompanhe status, candidatos e orçamentos."
-      actions={
-        <Link to="/empresa/publicar">
-          <Btn size="sm">
-            <FilePlus2 className="h-3.5 w-3.5" /> Novo projeto
-          </Btn>
-        </Link>
-      }
-    >
-      <PageTransition>
-        <Card className="mb-5 flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+    <PageTransition>
+        <FilterBar
+          className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-center"
+          trailing={`${jobs.length} projeto${jobs.length === 1 ? '' : 's'}`}
+        >
           <TextInput
             placeholder="Buscar por título, stack..."
-            className="sm:max-w-xs"
+            className="w-full sm:max-w-xs"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <Select
-            className="sm:w-40"
+          <JobStatusFilter
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">Todos os status</option>
-            <option value="OPEN">Aberta</option>
-            <option value="PAUSED">Pausada</option>
-            <option value="CLOSED">Encerrada</option>
-            <option value="CANCELLED">Cancelada</option>
-          </Select>
-          <span className="ml-auto text-sm text-muted-foreground">{jobs.length} projetos</span>
-        </Card>
+            onChange={setStatusFilter}
+            counts={statusCounts}
+            className="w-full sm:flex-1"
+          />
+        </FilterBar>
 
         {jobsQuery.isLoading && (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -97,7 +99,7 @@ export function EmpresaProjectsPage() {
         {jobsQuery.isError && (
           <ErrorState onRetry={() => jobsQuery.refetch()} />
         )}
-        {!jobsQuery.isLoading && !jobsQuery.isError && jobs.length === 0 && (
+        {!jobsQuery.isLoading && !jobsQuery.isError && allJobs.length === 0 && (
           <EmptyState
             icon={Briefcase}
             title="Nenhum projeto publicado"
@@ -109,80 +111,45 @@ export function EmpresaProjectsPage() {
             }
           />
         )}
+        {!jobsQuery.isLoading && allJobs.length > 0 && jobs.length === 0 && (
+          <EmptyState
+            icon={Briefcase}
+            title="Nenhum projeto com esse filtro"
+            description="Tente outro status ou limpe a busca para ver todos os projetos."
+            action={
+              <Btn
+                variant="secondary"
+                onClick={() => {
+                  setStatusFilter('');
+                  setSearch('');
+                }}
+              >
+                Limpar filtros
+              </Btn>
+            }
+          />
+        )}
         {!jobsQuery.isLoading && jobs.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {jobs.map((p) => {
-              const stack = p.technologies?.map((t) => t.technology.name) ?? [];
-              return (
-                <Card
-                  key={p.id}
-                  className="flex flex-col p-6 transition-all duration-200 hover:-translate-y-px hover:border-primary/20"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="grid h-10 w-10 place-items-center rounded-md bg-primary/6 text-primary">
-                      <Briefcase className="h-4 w-4" />
-                    </div>
-                    <JobStatusBadge status={p.status} />
-                  </div>
-                  <h3 className="mt-4 font-display text-lg font-semibold leading-tight">
-                    {p.title}
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    {formatRelativeDate(p.createdAt)}
-                  </p>
-                  <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {stack.slice(0, 4).map((s) => (
-                      <span
-                        key={s}
-                        className="rounded border bg-surface-muted px-2 py-0.5 font-mono text-[10px] font-medium"
-                      >
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="mt-5 flex items-center justify-between border-t pt-4">
-                    <div>
-                      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Candidatos
-                      </p>
-                      <p className="text-sm font-semibold">{p._count?.applications ?? 0}</p>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <Link to={`/empresa/candidatos?jobId=${p.id}`}>
-                        <Btn size="sm" variant="secondary">
-                          <Users className="h-3.5 w-3.5" />
-                          {p._count?.applications ?? 0}
-                        </Btn>
-                      </Link>
-                      {p.status === 'OPEN' && (
-                        <Btn
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => statusMutation.mutate({ id: p.id, status: 'PAUSED' })}
-                          title="Pausar"
-                        >
-                          <Pause className="h-3.5 w-3.5" />
-                        </Btn>
-                      )}
-                      {p.status !== 'CLOSED' && p.status !== 'CANCELLED' && (
-                        <Btn
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => statusMutation.mutate({ id: p.id, status: 'CLOSED' })}
-                          title="Encerrar"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                        </Btn>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {jobs.map((p) => (
+              <ProjectCard
+                key={p.id}
+                job={p}
+                actionsDisabled={statusMutation.isPending}
+                onPause={
+                  p.status === 'OPEN'
+                    ? () => statusMutation.mutate({ id: p.id, status: 'PAUSED' })
+                    : undefined
+                }
+                onClose={
+                  p.status !== 'CLOSED' && p.status !== 'CANCELLED'
+                    ? () => statusMutation.mutate({ id: p.id, status: 'CLOSED' })
+                    : undefined
+                }
+              />
+            ))}
           </div>
         )}
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

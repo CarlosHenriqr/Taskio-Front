@@ -10,13 +10,14 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Badge, Btn, Card, StatCard } from '@/components/taskio/ui';
+import { Badge, Btn, StatCard } from '@/components/taskio/ui';
+import { ListItemCard, MetaChip, SectionCard } from '@/components/shared/ContentCards';
+import { formatJobPayment } from '@/lib/jobPayment';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
-import { freelancerNav } from '@/lib/nav';
 import { applicationsApi } from '@/lib/api/applications.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { useRecommendedJobs } from '@/hooks/useRecommendedJobs';
@@ -52,22 +53,21 @@ export function FreelancerDashboardPage() {
   const chartData = buildChartData(apps);
   const rating = reviewsQuery.data?.averageRating?.toFixed(1) ?? '—';
 
+  usePageShell({
+    title: 'Dashboard',
+    description: 'Acompanhe candidaturas, propostas e ganhos.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    actions: (
+      <Link to="/freelancer/perfil/editar">
+        <Btn size="sm">
+          <ArrowUpRight className="h-3.5 w-3.5" /> Atualizar perfil
+        </Btn>
+      </Link>
+    ),
+  });
+
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
-      title="Dashboard"
-      description="Acompanhe candidaturas, propostas e ganhos."
-      actions={
-        <Link to="/freelancer/perfil/editar">
-          <Btn size="sm">
-            <ArrowUpRight className="h-3.5 w-3.5" /> Atualizar perfil
-          </Btn>
-        </Link>
-      }
-    >
-      <PageTransition>
+    <PageTransition>
         {appsQuery.isLoading && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -105,10 +105,8 @@ export function FreelancerDashboardPage() {
             </div>
 
             <div className="mt-6 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-              <Card className="p-6">
-                <h2 className="font-display text-lg font-semibold tracking-tight">Atividade da semana</h2>
-                <p className="text-sm text-muted-foreground">Candidaturas enviadas.</p>
-                <div className="mt-4 h-60">
+              <SectionCard title="Atividade da semana" description="Candidaturas enviadas.">
+                <div className="h-60">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                       <CartesianGrid stroke="oklch(0.925 0.008 80)" vertical={false} />
@@ -126,31 +124,22 @@ export function FreelancerDashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </Card>
+              </SectionCard>
 
-              <Card className="p-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display text-lg font-semibold tracking-tight">Vagas recomendadas</h2>
-                  <Link
-                    to="/freelancer/recomendadas"
-                    className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary link-underline"
-                  >
-                    Ver todas
-                  </Link>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {(recommendedJobs).slice(0, 3).map((p) => (
-                    <Link
+              <SectionCard
+                title="Vagas recomendadas"
+                actionTo="/freelancer/recomendadas"
+                actionLabel="Ver todas"
+              >
+                <div className="space-y-2">
+                  {recommendedJobs.slice(0, 3).map((p) => (
+                    <ListItemCard
                       key={p.id}
                       to={`/freelancer/vagas/${p.id}`}
-                      className="block rounded-md border bg-surface p-4 transition-all duration-150 hover:bg-surface-muted/50"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold leading-tight">{p.title}</p>
-                        <Badge tone="success">{p.matchPercent}% compatível</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{p.company?.name}</p>
-                    </Link>
+                      title={p.title}
+                      subtitle={p.company?.name ?? 'Empresa'}
+                      badge={<Badge tone="success">{p.matchPercent}% compatível</Badge>}
+                    />
                   ))}
                   {!recommendedJobs.length && (
                     <p className="text-sm text-muted-foreground">
@@ -158,61 +147,37 @@ export function FreelancerDashboardPage() {
                     </p>
                   )}
                 </div>
-              </Card>
+              </SectionCard>
             </div>
 
-            <Card className="mt-6 overflow-hidden">
-              <div className="flex items-center justify-between p-5">
-                <h2 className="font-display text-lg font-semibold tracking-tight">Candidaturas recentes</h2>
-                <Link
-                  to="/freelancer/trabalhos"
-                  className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary link-underline"
-                >
-                  Ver todas
-                </Link>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-t bg-muted/40 text-left">
-                      <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Projeto</th>
-                      <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Empresa</th>
-                      <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Data</th>
-                      <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {apps.slice(0, 5).map((a) => (
-                      <tr key={a.id} className="border-t transition-colors hover:bg-muted/20">
-                        <td className="px-5 py-3 font-medium">
-                          <Link
-                            to={`/freelancer/trabalhos/${a.id}`}
-                            className="link-underline hover:text-primary"
-                          >
-                            {a.job?.title ?? '—'}
-                          </Link>
-                        </td>
-                        <td className="px-5 py-3 text-muted-foreground">
-                          {a.job?.company?.name ?? '—'}
-                        </td>
-                        <td className="px-5 py-3 font-mono text-xs text-muted-foreground">
-                          {formatRelativeDate(a.createdAt)}
-                        </td>
-                        <td className="px-5 py-3">
-                          <ApplicationStatusBadge status={a.status} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <SectionCard
+              className="mt-6"
+              title="Candidaturas recentes"
+              actionTo="/freelancer/trabalhos"
+              actionLabel="Ver todas"
+            >
+              <div className="space-y-2">
+                {apps.slice(0, 5).map((a) => {
+                  const payment = a.job ? formatJobPayment(a.job) : null;
+                  return (
+                    <ListItemCard
+                      key={a.id}
+                      to={`/freelancer/trabalhos/${a.id}`}
+                      title={a.job?.title ?? 'Projeto'}
+                      subtitle={`${a.job?.company?.name ?? 'Empresa'} · ${formatRelativeDate(a.createdAt)}`}
+                      detail={a.coverLetter?.trim() || undefined}
+                      meta={payment ? <MetaChip>{payment}</MetaChip> : undefined}
+                      trailing={<ApplicationStatusBadge status={a.status} />}
+                    />
+                  );
+                })}
                 {apps.length === 0 && (
-                  <p className="p-5 text-sm text-muted-foreground">Nenhuma candidatura ainda.</p>
+                  <p className="text-sm text-muted-foreground">Nenhuma candidatura ainda.</p>
                 )}
               </div>
-            </Card>
+            </SectionCard>
           </>
         )}
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

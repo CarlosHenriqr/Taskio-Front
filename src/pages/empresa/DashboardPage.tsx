@@ -1,13 +1,16 @@
 import { Link } from 'react-router-dom';
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useMutation, useQueries, useQuery } from '@tanstack/react-query';
 import {
   Briefcase,
   Users,
   RefreshCw,
   Star,
   ArrowUpRight,
+  Handshake,
+  FolderKanban,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Area,
   AreaChart,
@@ -17,20 +20,33 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Badge, Btn, Card, StatCard } from '@/components/taskio/ui';
+import { Badge, Btn, StatCard } from '@/components/taskio/ui';
+import {
+  AvatarBadge,
+  HighlightCard,
+  ListItemCard,
+  MetaChip,
+  SectionCard,
+  TechPill,
+} from '@/components/shared/ContentCards';
+import { formatJobPayment } from '@/lib/jobPayment';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobStatusBadge } from '@/components/shared/StatusBadge';
-import { empresaNav } from '@/lib/nav';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchCompanyJobs } from '@/lib/companyJobs';
-import { jobsApi } from '@/lib/api/jobs.api';
+import { ApiRequestError } from '@/lib/api/client';
+import { fetchCompanyApplications, fetchCompanyJobs } from '@/lib/companyJobs';
 import { matchingApi } from '@/lib/api/matching.api';
 import { filterByMinMatch } from '@/lib/matching.util';
 import { getInitials, formatRelativeDate } from '@/lib/utils';
-import type { Application, Job } from '@/types/api';
+import type { Application, Job, RecommendedCandidate } from '@/types/api';
+
+type RecommendedForJob = RecommendedCandidate & {
+  jobId: string;
+  jobTitle: string;
+};
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
@@ -47,45 +63,95 @@ function buildChartData(applications: Application[]) {
   return DAYS.map((day, i) => ({ day, candidatos: counts[i], propostas: Math.max(0, Math.floor(counts[i] * 0.6)) }));
 }
 
+function interestKey(jobId: string, userId: string) {
+  return `${jobId}:${userId}`;
+}
+
 export function EmpresaDashboardPage() {
   const { user } = useAuth();
+  const [sentInterests, setSentInterests] = useState<Set<string>>(new Set());
+
+  usePageShell({
+    title: 'Dashboard',
+    description: 'Acompanhe o pulso dos seus projetos e candidaturas.',
+    actions: (
+      <Link to="/empresa/conta">
+        <Btn size="sm" variant="secondary">
+          <ArrowUpRight className="h-3.5 w-3.5" /> Atualizar perfil
+        </Btn>
+      </Link>
+    ),
+  });
 
   const jobsQuery = useQuery({
     queryKey: ['company', 'jobs', user?.id],
-    queryFn: () => fetchCompanyJobs(user!.id),
+    queryFn: () => fetchCompanyJobs(),
     enabled: !!user?.id,
   });
 
   const appsQuery = useQuery({
-    queryKey: ['company', 'applications', user?.id, jobsQuery.data?.map((j) => j.id)],
-    queryFn: async () => {
-      const jobs = jobsQuery.data ?? [];
-      const all: Application[] = [];
-      for (const job of jobs) {
-        const apps = (await jobsApi.listApplications(job.id)) as Application[];
-        all.push(...apps);
-      }
-      return all;
-    },
-    enabled: !!jobsQuery.data?.length,
+    queryKey: ['company', 'applications', user?.id],
+    queryFn: () => fetchCompanyApplications(),
+    enabled: !!user?.id,
   });
-
-  const firstJobId = jobsQuery.data?.[0]?.id;
-  const firstJobTitle = jobsQuery.data?.[0]?.title;
-  const candidatesQuery = useQuery({
-    queryKey: ['matching', 'candidates', firstJobId],
-    queryFn: () => matchingApi.recommendedCandidates(firstJobId!, 20),
-    enabled: !!firstJobId,
-  });
-
-  const recommendedCandidates = useMemo(
-    () => filterByMinMatch(candidatesQuery.data ?? [], (c) => c.matchPercent).slice(0, 4),
-    [candidatesQuery.data],
-  );
 
   const jobs = jobsQuery.data ?? [];
+  const openJobs = useMemo(
+    () => jobs.filter((j) => j.status === 'OPEN').slice(0, 3),
+    [jobs],
+  );
+
+  const recommendationQueries = useQueries({
+    queries: openJobs.map((job) => ({
+      queryKey: ['matching', 'candidates', job.id],
+      queryFn: () => matchingApi.recommendedCandidates(job.id, 8),
+      enabled: !!job.id,
+    })),
+  });
+
+  const recommendedCandidates = useMemo(() => {
+    const items: RecommendedForJob[] = openJobs.flatMap((job, index) => {
+      const candidates = recommendationQueries[index]?.data ?? [];
+      return filterByMinMatch(candidates, (c) => c.matchPercent)
+        .slice(0, 2)
+        .map((candidate) => ({
+          ...candidate,
+          jobId: job.id,
+          jobTitle: job.title,
+        }));
+    });
+
+    return items.sort((a, b) => b.matchPercent - a.matchPercent).slice(0, 4);
+  }, [openJobs, recommendationQueries]);
+
+  const interestMutation = useMutation({
+    mutationFn: ({ jobId, userId }: { jobId: string; userId: string }) =>
+      matchingApi.expressHiringInterest(jobId, userId),
+    onSuccess: (data) => {
+      setSentInterests((prev) => new Set(prev).add(interestKey(data.jobId, data.candidateUserId)));
+      toast.success(`Interesse enviado para ${data.candidateName} no projeto "${data.jobTitle}".`);
+    },
+    onError: (error, variables) => {
+      const code = error instanceof ApiRequestError ? error.code : undefined;
+      if (code === 'INTEREST_ALREADY_SENT') {
+        setSentInterests((prev) => new Set(prev).add(interestKey(variables.jobId, variables.userId)));
+        toast.info('Você já manifestou interesse neste candidato para este projeto.');
+        return;
+      }
+      if (code === 'CANDIDATE_ALREADY_APPLIED') {
+        toast.info('Este candidato já se candidatou a este projeto.');
+        return;
+      }
+      toast.error(
+        error instanceof ApiRequestError ? error.message : 'Não foi possível enviar o interesse.',
+      );
+    },
+  });
+
+  const recommendationsLoading =
+    openJobs.length > 0 && recommendationQueries.some((q) => q.isLoading);
   const applications = appsQuery.data ?? [];
-  const openJobs = jobs.filter((j) => j.status === 'OPEN').length;
+  const openJobsCount = jobs.filter((j) => j.status === 'OPEN').length;
   const inProgress = applications.filter((a) => a.status === 'ACCEPTED').length;
   const chartData = buildChartData(applications);
   const isLoading = jobsQuery.isLoading;
@@ -121,22 +187,16 @@ export function EmpresaDashboardPage() {
           <StatCard
             label="Em andamento"
             value={inProgress}
-            delta={openJobs > 0 ? `${openJobs} vagas abertas` : undefined}
+            delta={openJobsCount > 0 ? `${openJobsCount} vagas abertas` : undefined}
             deltaTone="neutral"
             icon={RefreshCw}
           />
-          <StatCard label="Vagas abertas" value={openJobs} deltaTone="neutral" icon={Star} />
+          <StatCard label="Vagas abertas" value={openJobsCount} deltaTone="neutral" icon={Star} />
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          <Card className="p-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <h2 className="font-display text-lg font-semibold tracking-tight">Atividade da semana</h2>
-                <p className="text-sm text-muted-foreground">Candidaturas recebidas.</p>
-              </div>
-            </div>
-            <div className="mt-5 h-64">
+          <SectionCard title="Atividade da semana" description="Candidaturas recebidas.">
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                   <defs>
@@ -179,105 +239,110 @@ export function EmpresaDashboardPage() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-          </Card>
+          </SectionCard>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-semibold tracking-tight">Projetos recentes</h2>
-              <Link to="/empresa/projetos" className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary link-underline">
-                Ver todas
-              </Link>
-            </div>
-            <div className="mt-4 space-y-2">
-              {jobs.slice(0, 3).map((p: Job) => (
-                <div
-                  key={p.id}
-                  className="flex items-start justify-between rounded-md border bg-surface p-3 transition-colors duration-150 hover:bg-surface-muted/50"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{p.title}</p>
-                    <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
-                      {formatRelativeDate(p.createdAt)} &middot; {p._count?.applications ?? 0}{' '}
-                      candidatos
-                    </p>
-                  </div>
-                  <JobStatusBadge status={p.status} />
-                </div>
-              ))}
+          <SectionCard
+            title="Projetos recentes"
+            actionTo="/empresa/projetos"
+            actionLabel="Ver todas"
+          >
+            <div className="space-y-2">
+              {jobs.slice(0, 3).map((p: Job) => {
+                const payment = formatJobPayment(p);
+                return (
+                  <ListItemCard
+                    key={p.id}
+                    to={`/empresa/projetos/${p.id}`}
+                    title={p.title}
+                    subtitle={`${formatRelativeDate(p.createdAt)} · ${p._count?.applications ?? 0} candidatos`}
+                    meta={payment ? <MetaChip>{payment}</MetaChip> : undefined}
+                    trailing={<JobStatusBadge status={p.status} />}
+                  />
+                );
+              })}
               {jobs.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Nenhum projeto publicado ainda.</p>
+                <p className="text-sm text-muted-foreground">Nenhum projeto publicado ainda.</p>
               )}
             </div>
-          </Card>
+          </SectionCard>
         </div>
 
-        <Card className="mt-6 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-display text-lg font-semibold tracking-tight">Candidatos recomendados</h2>
-              <p className="text-sm text-muted-foreground">
-                Top matches gerados pelo motor de compatibilidade.
-              </p>
-            </div>
-            <Link
-              to={firstJobId ? `/empresa/candidatos?jobId=${firstJobId}` : '/empresa/candidatos'}
-              className="font-mono text-[10px] font-semibold uppercase tracking-wider text-primary link-underline"
-            >
-              Ver todos
-            </Link>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {recommendedCandidates.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center gap-3 rounded-md border bg-surface p-4 transition-all duration-150 hover:bg-surface-muted/50"
-              >
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                  {getInitials(c.name)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="truncate font-semibold">{c.name}</p>
-                    <Badge tone="success">{c.matchPercent}% match</Badge>
-                  </div>
-                  <p className="truncate text-xs text-muted-foreground">{firstJobTitle}</p>
-                  {!!c.matchedTechnologies?.length && (
-                    <p className="mt-1 truncate text-[10px] text-muted-foreground">
-                      Stack: {c.matchedTechnologies.join(', ')}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-            {!recommendedCandidates.length && (
+        <SectionCard
+          className="mt-6"
+          title="Candidatos recomendados"
+          description="Matches por projeto aberto. Manifeste interesse e o candidato receberá uma notificação no app."
+          actionTo="/empresa/candidatos"
+          actionLabel="Ver todos"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {recommendationsLoading &&
+              Array.from({ length: 2 }).map((_, i) => <CardSkeleton key={i} />)}
+            {!recommendationsLoading &&
+              recommendedCandidates.map((c) => {
+                const sent = sentInterests.has(interestKey(c.jobId, c.id));
+                const pending =
+                  interestMutation.isPending &&
+                  interestMutation.variables?.jobId === c.jobId &&
+                  interestMutation.variables?.userId === c.id;
+
+                return (
+                  <HighlightCard key={`${c.jobId}-${c.id}`}>
+                    <div className="flex items-start gap-3">
+                      <AvatarBadge>{getInitials(c.name)}</AvatarBadge>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate font-display text-sm font-semibold">{c.name}</p>
+                          <Badge tone="success">{c.matchPercent}% match</Badge>
+                        </div>
+                        <Link
+                          to={`/empresa/projetos/${c.jobId}`}
+                          className="mt-1.5 inline-flex max-w-full items-center gap-1 text-xs font-medium text-primary hover:underline"
+                        >
+                          <FolderKanban className="h-3 w-3 shrink-0" />
+                          <span className="truncate">Projeto: {c.jobTitle}</span>
+                        </Link>
+                        {!!c.matchedTechnologies?.length && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {c.matchedTechnologies.slice(0, 3).map((tech) => (
+                              <TechPill key={tech} highlight>
+                                {tech}
+                              </TechPill>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <Btn
+                      size="sm"
+                      variant={sent ? 'secondary' : 'outline'}
+                      className="w-full"
+                      disabled={sent || pending}
+                      onClick={() =>
+                        interestMutation.mutate({ jobId: c.jobId, userId: c.id })
+                      }
+                    >
+                      <Handshake className="h-3.5 w-3.5" />
+                      {sent
+                        ? 'Interesse enviado'
+                        : pending
+                          ? 'Enviando...'
+                          : 'Tenho interesse em contratar'}
+                    </Btn>
+                  </HighlightCard>
+                );
+              })}
+            {!recommendationsLoading && !recommendedCandidates.length && (
               <p className="col-span-2 text-sm text-muted-foreground">
-                {firstJobId
-                  ? 'Nenhum candidato com compatibilidade ≥ 70% para este projeto.'
-                  : 'Publique um projeto para ver recomendações de candidatos.'}
+                {openJobs.length > 0
+                  ? 'Nenhum candidato com compatibilidade ≥ 70% nos projetos abertos.'
+                  : 'Publique um projeto aberto para ver recomendações de candidatos.'}
               </p>
             )}
           </div>
-        </Card>
+        </SectionCard>
       </>
     );
   };
 
-  return (
-    <AppShell
-      nav={empresaNav}
-      subtitle="Empresa"
-      primaryAction={{ label: 'Novo projeto', to: '/empresa/publicar' }}
-      title="Dashboard"
-      description="Acompanhe o pulso dos seus projetos e candidaturas."
-      actions={
-        <Link to="/empresa/conta">
-          <Btn size="sm" variant="secondary">
-            <ArrowUpRight className="h-3.5 w-3.5" /> Atualizar perfil
-          </Btn>
-        </Link>
-      }
-    >
-      <PageTransition>{content()}</PageTransition>
-    </AppShell>
-  );
+  return <PageTransition>{content()}</PageTransition>;
 }

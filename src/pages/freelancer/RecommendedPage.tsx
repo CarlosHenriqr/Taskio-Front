@@ -1,27 +1,25 @@
 import { useNavigate } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
-import { AppShell } from '@/components/taskio/AppShell';
 import { EmptyState } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobCard } from '@/components/shared/JobCard';
-import { freelancerNav } from '@/lib/nav';
 import { useRecommendedJobs } from '@/hooks/useRecommendedJobs';
 
 export function FreelancerRecommendedPage() {
   const navigate = useNavigate();
   const { jobs, isLoading, isError, refetch } = useRecommendedJobs();
 
+  usePageShell({
+    title: 'Vagas recomendadas',
+    description: 'Projetos com maior compatibilidade com seu perfil técnico.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+  });
+
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
-      title="Vagas recomendadas"
-      description="Projetos com maior compatibilidade com seu perfil técnico."
-    >
-      <PageTransition>
+    <PageTransition>
         {isLoading && (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -49,7 +47,6 @@ export function FreelancerRecommendedPage() {
             />
           ))}
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

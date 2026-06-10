@@ -3,12 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
 import { Btn, Card, Chip, Field, Select, TextArea, TextInput } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { freelancerNav } from '@/lib/nav';
 import { profileApi } from '@/lib/api/profile.api';
 import { technologiesApi } from '@/lib/api/technologies.api';
 import {
@@ -132,43 +131,34 @@ export function FreelancerProfilePage() {
     return techs.filter((t) => idSet.has(t.id)).map((t) => t.name);
   }, [selectedTechIds, techs]);
 
+  usePageShell({
+    title: 'Editar perfil',
+    description: 'Atualize bio, stack, experiências e portfólio.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    actions: !profileQuery.isLoading && !profileQuery.isError ? (
+      <>
+        <Link to="/freelancer/perfil">
+          <Btn variant="secondary" size="sm">
+            <ArrowLeft className="h-3.5 w-3.5" /> Ver perfil
+          </Btn>
+        </Link>
+        <Btn size="sm" onClick={handleSave} disabled={saveMutation.isPending}>
+          <Save className="h-3.5 w-3.5" /> Salvar perfil
+        </Btn>
+      </>
+    ) : undefined,
+  });
+
   if (profileQuery.isLoading) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Editar perfil" primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}>
-        <PageLoader />
-      </AppShell>
-    );
+    return <PageLoader />;
   }
 
   if (profileQuery.isError) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Editar perfil" primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}>
-        <ErrorState onRetry={() => profileQuery.refetch()} />
-      </AppShell>
-    );
+    return <ErrorState onRetry={() => profileQuery.refetch()} />;
   }
 
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
-      title="Editar perfil"
-      description="Atualize bio, stack, experiências e portfólio."
-      actions={
-        <>
-          <Link to="/freelancer/perfil">
-            <Btn variant="secondary" size="sm">
-              <ArrowLeft className="h-3.5 w-3.5" /> Ver perfil
-            </Btn>
-          </Link>
-          <Btn size="sm" onClick={handleSave} disabled={saveMutation.isPending}>
-            <Save className="h-3.5 w-3.5" /> Salvar perfil
-          </Btn>
-        </>
-      }
-    >
-      <PageTransition>
+    <PageTransition>
         <div className="space-y-6">
           <Card className="p-6">
             <h3 className="font-display font-semibold">Dados pessoais</h3>
@@ -313,8 +303,7 @@ export function FreelancerProfilePage() {
             onChange={() => invalidateProfile(queryClient)}
           />
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }
 

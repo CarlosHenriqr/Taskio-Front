@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Users, Building2, Briefcase, Shield } from 'lucide-react';
-import { AppShell } from '@/components/taskio/AppShell';
 import { Card, StatCard } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { adminNav } from '@/lib/nav';
 import { adminApi } from '@/lib/api/admin.api';
 
 export function AdminDashboardPage() {
@@ -30,14 +29,13 @@ export function AdminDashboardPage() {
   const blocked = users.filter((u) => u.isBlocked).length;
   const isLoading = usersQuery.isLoading || jobsQuery.isLoading;
 
+  usePageShell({
+    title: 'Dashboard',
+    description: 'Visão geral da plataforma TASKIO.',
+  });
+
   return (
-    <AppShell
-      nav={adminNav}
-      subtitle="Admin"
-      title="Dashboard"
-      description="Visão geral da plataforma TASKIO."
-    >
-      <PageTransition>
+    <PageTransition>
         {isLoading && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -74,7 +72,6 @@ export function AdminDashboardPage() {
             </Card>
           </>
         )}
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

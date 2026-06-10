@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Save, Lock } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
 import { AvatarUpload } from '@/components/taskio/AvatarUpload';
 import { Btn, Card, Field, TextInput } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { freelancerNav } from '@/lib/nav';
 import { profileApi } from '@/lib/api/profile.api';
 import { isValidPhone, normalizePhoneDigits } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
@@ -64,32 +63,24 @@ export function FreelancerAccountPage() {
     passwordMutation.mutate();
   };
 
+  usePageShell({
+    title: 'Configurar conta',
+    description: 'Gerencie seus dados de acesso e segurança.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+  });
+
   if (profileQuery.isLoading) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Configurar conta">
-        <PageLoader />
-      </AppShell>
-    );
+    return <PageLoader />;
   }
 
   if (profileQuery.isError) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Configurar conta">
-        <ErrorState onRetry={() => profileQuery.refetch()} />
-      </AppShell>
-    );
+    return <ErrorState onRetry={() => profileQuery.refetch()} />;
   }
 
   const profile = profileQuery.data!;
 
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      title="Configurar conta"
-      description="Gerencie seus dados de acesso e segurança."
-    >
-      <PageTransition>
+    <PageTransition>
         <div className="mx-auto max-w-2xl space-y-6">
           <Card className="p-6">
             <h3 className="font-display font-semibold">Foto e identidade</h3>
@@ -171,7 +162,6 @@ export function FreelancerAccountPage() {
             </form>
           </Card>
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

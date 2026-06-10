@@ -2,29 +2,40 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Briefcase, SlidersHorizontal, X } from 'lucide-react';
-import { AppShell } from '@/components/taskio/AppShell';
-import { Btn, Card, Chip, EmptyState, Field, Select } from '@/components/taskio/ui';
+import { Btn, Card, Chip, EmptyState, Field } from '@/components/taskio/ui';
+import { FilterSelect } from '@/components/shared/FilterSelect';
+import { PillFilter } from '@/components/shared/PillFilter';
+import {
+  DEADLINE_OPTIONS,
+  MIN_MATCH_OPTIONS,
+  SORT_OPTIONS,
+  TECH_ROLE_OPTIONS,
+  type DeadlineFilterValue,
+  type MinMatchFilterValue,
+  type SortFilterValue,
+  type TechRoleFilterValue,
+} from '@/components/shared/filters/jobsPageFilters';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobCard } from '@/components/shared/JobCard';
-import { freelancerNav } from '@/lib/nav';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { profileApi } from '@/lib/api/profile.api';
 import { technologiesApi } from '@/lib/api/technologies.api';
 import { computeSkillMatch } from '@/lib/matching.util';
 
-type SortOption = 'match' | 'recent' | 'deadline_asc' | 'deadline_desc';
+type SortOption = SortFilterValue;
 
 export function FreelancerJobsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
-  const [minMatchFilter, setMinMatchFilter] = useState('');
+  const [minMatchFilter, setMinMatchFilter] = useState<MinMatchFilterValue>('');
   const [techFilter, setTechFilter] = useState('');
-  const [techRoleFilter, setTechRoleFilter] = useState<'REQUIRED' | 'DESIRABLE' | ''>('');
+  const [techRoleFilter, setTechRoleFilter] = useState<TechRoleFilterValue>('');
   const [stackOnlyFilter, setStackOnlyFilter] = useState(false);
-  const [deadlineFilter, setDeadlineFilter] = useState('');
+  const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilterValue>('');
   const [sortBy, setSortBy] = useState<SortOption>('match');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -223,15 +234,14 @@ export function FreelancerJobsPage() {
 
   const activeFilterCount = activeFilterChips.length;
 
+  usePageShell({
+    title: 'Buscar vagas',
+    description: 'Encontre projetos compatíveis com seu perfil técnico.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+  });
+
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
-      title="Buscar vagas"
-      description="Encontre projetos compatíveis com seu perfil técnico."
-    >
-      <PageTransition>
+    <PageTransition>
         <Card className="mb-5 overflow-hidden p-0">
           <div className="flex items-stretch">
             <div className="relative flex min-w-0 flex-1 items-center">
@@ -307,27 +317,54 @@ export function FreelancerJobsPage() {
           </div>
 
           {filtersOpen && (
-            <div className="space-y-3 border-t bg-surface p-4">
+            <div className="space-y-4 border-t bg-surface p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Refinar resultados
               </p>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 lg:grid-cols-2">
                 <Field label="Compatibilidade">
-                  <Select
+                  <PillFilter
                     value={minMatchFilter}
-                    onChange={(e) => setMinMatchFilter(e.target.value)}
-                  >
-                    <option value="">Qualquer</option>
-                    <option value="20">≥ 20%</option>
-                    <option value="40">≥ 40%</option>
-                    <option value="50">≥ 50%</option>
-                    <option value="70">≥ 70%</option>
-                    <option value="80">≥ 80%</option>
-                  </Select>
+                    onChange={setMinMatchFilter}
+                    options={MIN_MATCH_OPTIONS}
+                    ariaLabel="Filtrar por compatibilidade mínima"
+                    showCounts={false}
+                    size="sm"
+                  />
                 </Field>
-                <Field label="Tecnologia">
-                  <Select value={techFilter} onChange={(e) => setTechFilter(e.target.value)}>
-                    <option value="">Todas</option>
+                <Field label="Tipo na vaga">
+                  <PillFilter
+                    value={techRoleFilter}
+                    onChange={setTechRoleFilter}
+                    options={TECH_ROLE_OPTIONS}
+                    ariaLabel="Filtrar por tipo de tecnologia na vaga"
+                    showCounts={false}
+                    size="sm"
+                  />
+                </Field>
+                <Field label="Prazo de inscrição">
+                  <PillFilter
+                    value={deadlineFilter}
+                    onChange={setDeadlineFilter}
+                    options={DEADLINE_OPTIONS}
+                    ariaLabel="Filtrar por prazo de inscrição"
+                    showCounts={false}
+                    size="sm"
+                  />
+                </Field>
+                <Field label="Ordenar por">
+                  <PillFilter
+                    value={sortBy}
+                    onChange={setSortBy}
+                    options={SORT_OPTIONS}
+                    ariaLabel="Ordenar listagem de vagas"
+                    showCounts={false}
+                    size="sm"
+                  />
+                </Field>
+                <Field label="Tecnologia" className="lg:col-span-2">
+                  <FilterSelect value={techFilter} onChange={(e) => setTechFilter(e.target.value)}>
+                    <option value="">Todas as tecnologias</option>
                     {techFilterOptions.stack.length > 0 && (
                       <optgroup label="Minha stack">
                         {techFilterOptions.stack.map((tech) => (
@@ -346,45 +383,11 @@ export function FreelancerJobsPage() {
                         ))}
                       </optgroup>
                     )}
-                  </Select>
-                </Field>
-                <Field label="Tipo na vaga">
-                  <Select
-                    value={techRoleFilter}
-                    onChange={(e) =>
-                      setTechRoleFilter(e.target.value as 'REQUIRED' | 'DESIRABLE' | '')
-                    }
-                  >
-                    <option value="">Obrigatória ou desejável</option>
-                    <option value="REQUIRED">Somente obrigatórias</option>
-                    <option value="DESIRABLE">Somente desejáveis</option>
-                  </Select>
-                </Field>
-                <Field label="Prazo de inscrição">
-                  <Select
-                    value={deadlineFilter}
-                    onChange={(e) => setDeadlineFilter(e.target.value)}
-                  >
-                    <option value="">Qualquer prazo</option>
-                    <option value="7">Expira em até 7 dias</option>
-                    <option value="14">Expira em até 14 dias</option>
-                    <option value="30">Expira em até 30 dias</option>
-                  </Select>
-                </Field>
-                <Field label="Ordenar por">
-                  <Select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  >
-                    <option value="match">Maior compatibilidade</option>
-                    <option value="recent">Mais recentes</option>
-                    <option value="deadline_asc">Prazo mais próximo</option>
-                    <option value="deadline_desc">Prazo mais distante</option>
-                  </Select>
+                  </FilterSelect>
                 </Field>
                 {userTechIds.length > 0 && (
-                  <Field label="Perfil">
-                    <label className="flex h-9 cursor-pointer items-center gap-2 rounded-md border border-border bg-surface px-3 text-sm">
+                  <Field label="Perfil" className="lg:col-span-2">
+                    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border/70 bg-surface px-3 text-sm transition-colors hover:border-primary/25 hover:bg-surface-muted/40">
                       <input
                         type="checkbox"
                         className="h-4 w-4 rounded border-border accent-primary"
@@ -438,7 +441,6 @@ export function FreelancerJobsPage() {
             />
           ))}
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, Eye, Flag, Loader2 } from 'lucide-react';
+import { Check, X, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Btn } from '@/components/taskio/ui';
 import { applicationsApi } from '@/lib/api/applications.api';
@@ -19,8 +19,6 @@ type ApplicationActionsProps = {
 const ACCEPT_FROM: ApplicationStatus[] = ['PENDING', 'REVIEWED'];
 const REJECT_FROM: ApplicationStatus[] = ['PENDING', 'REVIEWED'];
 const REVIEW_FROM: ApplicationStatus[] = ['PENDING'];
-const COMPLETE_FROM: ApplicationStatus[] = ['ACCEPTED'];
-
 function successMessage(status: ApplicationStatus): string {
   switch (status) {
     case 'ACCEPTED':
@@ -29,8 +27,6 @@ function successMessage(status: ApplicationStatus): string {
       return 'Candidatura recusada.';
     case 'REVIEWED':
       return 'Candidato marcado como em análise.';
-    case 'COMPLETED':
-      return 'Projeto marcado como concluído.';
     default:
       return 'Status atualizado.';
   }
@@ -45,8 +41,6 @@ function confirmLabel(status: ApplicationStatus, candidateName?: string): string
       return `Recusar a candidatura de ${name}?`;
     case 'REVIEWED':
       return `Marcar ${name} como em análise?`;
-    case 'COMPLETED':
-      return 'Concluir este projeto e encerrar a vaga?';
     default:
       return 'Confirmar alteração?';
   }
@@ -77,8 +71,7 @@ export function ApplicationActions({
   const canAccept = ACCEPT_FROM.includes(status);
   const canReject = REJECT_FROM.includes(status);
   const canReview = REVIEW_FROM.includes(status);
-  const canComplete = COMPLETE_FROM.includes(status);
-  const hasActions = canAccept || canReject || canReview || canComplete;
+  const hasActions = canAccept || canReject || canReview;
 
   if (pendingAction) {
     return (
@@ -171,17 +164,6 @@ export function ApplicationActions({
             <X className="h-3.5 w-3.5" />
           </Btn>
         )}
-        {canComplete && (
-          <Btn
-            size="sm"
-            variant="outline"
-            title="Concluir projeto"
-            disabled={isPending}
-            onClick={() => setPendingAction('COMPLETED')}
-          >
-            <Flag className="h-3.5 w-3.5" />
-          </Btn>
-        )}
       </div>
     );
   }
@@ -212,28 +194,16 @@ export function ApplicationActions({
           </Btn>
         )}
       </div>
-      {(canReview || canComplete) && (
+      {canReview && (
         <div className="flex flex-col gap-2 border-t pt-3 sm:flex-row">
-          {canReview && (
-            <Btn
-              variant="secondary"
-              size="sm"
-              disabled={isPending}
-              onClick={() => setPendingAction('REVIEWED')}
-            >
-              <Eye className="h-3.5 w-3.5" /> Marcar em análise
-            </Btn>
-          )}
-          {canComplete && (
-            <Btn
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onClick={() => setPendingAction('COMPLETED')}
-            >
-              <Flag className="h-3.5 w-3.5" /> Concluir projeto
-            </Btn>
-          )}
+          <Btn
+            variant="secondary"
+            size="sm"
+            disabled={isPending}
+            onClick={() => setPendingAction('REVIEWED')}
+          >
+            <Eye className="h-3.5 w-3.5" /> Marcar em análise
+          </Btn>
         </div>
       )}
     </div>

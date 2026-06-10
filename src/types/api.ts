@@ -29,6 +29,7 @@ export type ApiError = {
 };
 
 export type JobStatus = 'OPEN' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
+export type JobPaymentType = 'FIXED_RANGE' | 'HOURLY';
 
 export type ApplicationStatus =
   | 'PENDING'
@@ -62,6 +63,11 @@ export type Job = {
   isActive: boolean;
   isFilled: boolean;
   status: JobStatus;
+  paymentType?: JobPaymentType | null;
+  budgetMin?: number | string | null;
+  budgetMax?: number | string | null;
+  hourlyRate?: number | string | null;
+  currency?: string;
   companyId: string;
   createdAt: string;
   updatedAt: string;
@@ -79,6 +85,8 @@ export type Application = {
   status: ApplicationStatus;
   resumeUrl: string | null;
   coverLetter: string | null;
+  companyCompletedAt?: string | null;
+  userCompletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   jobId: string;
@@ -119,7 +127,19 @@ export type Review = {
   rating: number;
   comment: string | null;
   createdAt: string;
+  reviewerType?: 'USER' | 'COMPANY';
+  reviewedType?: 'USER' | 'COMPANY';
   reviewer?: { id: string; name: string };
+};
+
+export type ApplicationReviewStatus = {
+  applicationId: string;
+  status: ApplicationStatus;
+  userReviewed: boolean;
+  companyReviewed: boolean;
+  userReview: Review | null;
+  companyReview: Review | null;
+  canReview: boolean;
 };
 
 export type ReviewSummary = {

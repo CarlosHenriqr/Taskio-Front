@@ -3,15 +3,15 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppShell } from '@/components/taskio/AppShell';
 import { Btn, Card, Field, TextArea } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobDescriptionView } from '@/components/shared/JobDescriptionView';
 import { JobMetaBar } from '@/components/shared/JobMetaBar';
+import { JobPaymentBlock } from '@/components/shared/JobPaymentBlock';
 import { JobTechStack } from '@/components/shared/JobTechStack';
-import { freelancerNav } from '@/lib/nav';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { profileApi } from '@/lib/api/profile.api';
 import { mapApiErrors } from '@/lib/utils';
@@ -55,38 +55,29 @@ export function FreelancerJobDetailPage() {
 
   const job = jobQuery.data;
 
+  usePageShell({
+    title: job?.title ?? 'Vaga',
+    description: job?.company?.name,
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    actions: job ? (
+      <Link to="/freelancer/vagas">
+        <Btn variant="secondary" size="sm">
+          <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+        </Btn>
+      </Link>
+    ) : undefined,
+  });
+
   if (jobQuery.isLoading) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Vaga" primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}>
-        <PageLoader />
-      </AppShell>
-    );
+    return <PageLoader />;
   }
 
   if (jobQuery.isError || !job) {
-    return (
-      <AppShell nav={freelancerNav} subtitle="Freelancer" title="Vaga" primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}>
-        <ErrorState onRetry={() => jobQuery.refetch()} />
-      </AppShell>
-    );
+    return <ErrorState onRetry={() => jobQuery.refetch()} />;
   }
 
   return (
-    <AppShell
-      nav={freelancerNav}
-      subtitle="Freelancer"
-      primaryAction={{ label: 'Ver vagas', to: '/freelancer/vagas' }}
-      title={job.title}
-      description={job.company?.name}
-      actions={
-        <Link to="/freelancer/vagas">
-          <Btn variant="secondary" size="sm">
-            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
-          </Btn>
-        </Link>
-      }
-    >
-      <PageTransition>
+    <PageTransition>
         <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-5">
             <Card className="p-6">
@@ -99,6 +90,7 @@ export function FreelancerJobDetailPage() {
                 createdAt={job.createdAt}
                 status={job.status}
               />
+              <JobPaymentBlock payment={job} className="mt-6" />
               <div className="mt-6">
                 <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                   Sobre a vaga
@@ -163,7 +155,6 @@ export function FreelancerJobDetailPage() {
             )}
           </aside>
         </div>
-      </PageTransition>
-    </AppShell>
+    </PageTransition>
   );
 }

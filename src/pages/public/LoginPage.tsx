@@ -24,8 +24,8 @@ export function LoginPage() {
     setFormError('');
     try {
       const path = await login({ email: identifier.trim(), password, type });
-      toast.success('Login realizado com sucesso!');
       navigate(path);
+      toast.success('Login realizado com sucesso!');
     } catch (err) {
       const { message, fields } = mapApiErrors(err);
       setFormError(message);
@@ -38,7 +38,7 @@ export function LoginPage() {
     <PageTransition>
       <div className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
         <div className="flex flex-col px-6 py-10 sm:px-12">
-          <Logo icon="home" />
+          <Logo />
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
             <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
               Bem-vindo de volta

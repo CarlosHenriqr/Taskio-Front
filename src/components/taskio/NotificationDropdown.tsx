@@ -1,26 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, Loader2 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/notifications.api';
+import { getNotificationPath } from '@/lib/notificationLinks';
 import { invalidateNotifications } from '@/lib/queryInvalidation';
 import { formatRelativeDate, getNotificationTitle } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import type { Notification } from '@/types/api';
 
 type NotificationDropdownProps = {
   allPath: string;
+  unreadCount?: number;
   className?: string;
 };
 
-export function NotificationDropdown({ allPath, className }: NotificationDropdownProps) {
+export function NotificationDropdown({ allPath, unreadCount: unreadCountProp, className }: NotificationDropdownProps) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-
-  const { data: unread } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
-    queryFn: () => notificationsApi.unreadCount(),
-    refetchInterval: 30000,
-  });
 
   const listQuery = useQuery({
     queryKey: ['notifications', 'panel'],
@@ -35,8 +35,24 @@ export function NotificationDropdown({ allPath, className }: NotificationDropdow
     },
   });
 
-  const unreadCount = unread?.count ?? 0;
+  const unreadCount = unreadCountProp ?? 0;
   const notifications = listQuery.data ?? [];
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (!user) return;
+
+    const path = getNotificationPath(notification, user.type);
+    if (!notification.read) {
+      markReadMutation.mutate(notification.id);
+    }
+    setOpen(false);
+
+    if (path) {
+      navigate(path);
+    } else {
+      navigate(allPath);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -128,9 +144,11 @@ export function NotificationDropdown({ allPath, className }: NotificationDropdow
           )}
 
           {notifications.map((n) => (
-            <div
+            <button
               key={n.id}
-              className={`border-b px-4 py-3 last:border-b-0 ${
+              type="button"
+              onClick={() => handleNotificationClick(n)}
+              className={`w-full border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-surface-muted/50 ${
                 !n.read ? 'bg-primary/5' : 'bg-surface'
               }`}
             >
@@ -151,19 +169,21 @@ export function NotificationDropdown({ allPath, className }: NotificationDropdow
                   </p>
                 </div>
                 {!n.read && (
-                  <button
-                    type="button"
-                    onClick={() => markReadMutation.mutate(n.id)}
-                    disabled={markReadMutation.isPending}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                  <span
+                    role="presentation"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markReadMutation.mutate(n.id);
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     aria-label="Marcar como lida"
                     title="Marcar como lida"
                   >
                     <Check className="h-3.5 w-3.5" />
-                  </button>
+                  </span>
                 )}
               </div>
-            </div>
+            </button>
           ))}
         </div>
 

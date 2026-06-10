@@ -48,7 +48,10 @@ export const NOTIFICATION_TYPE_LABELS: Record<string, string> = {
   APPLICATION_ACCEPTED: 'Candidatura aceita!',
   APPLICATION_REJECTED: 'Candidatura recusada',
   APPLICATION_STATUS_CHANGED: 'Atualização de candidatura',
+  APPLICATION_COMPLETION_PENDING: 'Confirmação de conclusão pendente',
+  APPLICATION_COMPLETED: 'Projeto finalizado',
   NEW_APPLICATION: 'Nova candidatura',
+  COMPANY_HIRING_INTEREST: 'Interesse de contratação',
 };
 
 export function getNotificationTitle(type: string): string {
