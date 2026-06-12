@@ -17,6 +17,7 @@ import {
 } from '@/components/shared/filters/jobsPageFilters';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobCard } from '@/components/shared/JobCard';
@@ -24,11 +25,13 @@ import { jobsApi } from '@/lib/api/jobs.api';
 import { profileApi } from '@/lib/api/profile.api';
 import { technologiesApi } from '@/lib/api/technologies.api';
 import { computeSkillMatch } from '@/lib/matching.util';
+import { queryKeys } from '@/lib/queryKeys';
 
 type SortOption = SortFilterValue;
 
 export function FreelancerJobsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [minMatchFilter, setMinMatchFilter] = useState<MinMatchFilterValue>('');
@@ -45,8 +48,9 @@ export function FreelancerJobsPage() {
   });
 
   const profileQuery = useQuery({
-    queryKey: ['profile', 'me'],
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
+    enabled: !!user?.id,
   });
 
   const techQuery = useQuery({

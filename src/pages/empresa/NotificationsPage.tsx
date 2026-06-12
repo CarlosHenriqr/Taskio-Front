@@ -6,20 +6,24 @@ import { EmptyState } from '@/components/taskio/ui';
 import { NotificationList } from '@/components/shared/NotificationList';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { notificationsApi } from '@/lib/api/notifications.api';
 import { getNotificationPath } from '@/lib/notificationLinks';
 import { invalidateNotifications } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Notification } from '@/types/api';
 
 export function EmpresaNotificationsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const listQuery = useQuery({
-    queryKey: ['notifications'],
+    queryKey: queryKeys.notifications.all(user!.id),
     queryFn: () => notificationsApi.list({ limit: 50 }),
+    enabled: !!user?.id,
   });
 
   const markReadMutation = useMutation({

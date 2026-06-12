@@ -75,7 +75,7 @@ export type Job = {
   company?: {
     id: string;
     name: string;
-    logoUrl?: string | null;
+    avatarUrl?: string | null;
   };
   _count?: { applications: number };
 };
@@ -159,7 +159,6 @@ export type UserProfile = {
   cpf?: string;
   cnpj?: string;
   segment?: string | null;
-  logoUrl?: string | null;
   website?: string | null;
   techStack?: Array<{
     level: SkillLevel;
@@ -199,6 +198,7 @@ export type RecommendedCandidate = {
   id: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   resumeUrl?: string | null;
   matchScore: number;
   matchPercent: number;

@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Users, ExternalLink } from 'lucide-react';
 import { Btn, EmptyState } from '@/components/taskio/ui';
-import { AvatarBadge, ContextBanner, EntityListCard, FilterBar } from '@/components/shared/ContentCards';
+import { ContextBanner, EntityListCard, FilterBar } from '@/components/shared/ContentCards';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import { FilterSelect } from '@/components/shared/FilterSelect';
 import {
   ApplicationStatusFilter,
@@ -19,7 +20,7 @@ import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
 import { ApplicationActions } from '@/components/empresa/ApplicationActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompanyApplications, fetchCompanyJobs } from '@/lib/companyJobs';
-import { getInitials, formatRelativeDate } from '@/lib/utils';
+import { formatRelativeDate } from '@/lib/utils';
 
 export function EmpresaCandidatesPage() {
   const { user } = useAuth();
@@ -153,7 +154,12 @@ export function EmpresaCandidatesPage() {
             <div key={a.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Link to={`/empresa/candidatos/${a.id}`} className="min-w-0 flex-1">
                 <EntityListCard
-                  avatar={<AvatarBadge>{getInitials(a.user?.name ?? '?')}</AvatarBadge>}
+                  avatar={
+                    <UserAvatar
+                      name={a.user?.name ?? 'Candidato'}
+                      avatarUrl={a.user?.avatarUrl}
+                    />
+                  }
                   title={a.user?.name ?? 'Candidato'}
                   subtitle={`${a.jobTitle} · ${formatRelativeDate(a.createdAt)}`}
                   detail={

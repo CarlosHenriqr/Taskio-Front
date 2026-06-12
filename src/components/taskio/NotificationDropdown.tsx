@@ -5,6 +5,7 @@ import { Bell, Check, Loader2 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/notifications.api';
 import { getNotificationPath } from '@/lib/notificationLinks';
 import { invalidateNotifications } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeDate, getNotificationTitle } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Notification } from '@/types/api';
@@ -23,9 +24,9 @@ export function NotificationDropdown({ allPath, unreadCount: unreadCountProp, cl
   const [open, setOpen] = useState(false);
 
   const listQuery = useQuery({
-    queryKey: ['notifications', 'panel'],
+    queryKey: queryKeys.notifications.panel(user!.id),
     queryFn: () => notificationsApi.list({ limit: 12 }),
-    enabled: open,
+    enabled: open && !!user?.id,
   });
 
   const markReadMutation = useMutation({

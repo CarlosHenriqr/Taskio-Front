@@ -38,7 +38,7 @@ export function AppShell({
   const shellEnabled = !!user && (user.type === 'user' || user.type === 'company');
 
   const { data: unread } = useQuery({
-    queryKey: queryKeys.notifications.unreadCount,
+    queryKey: queryKeys.notifications.unreadCount(user!.id),
     queryFn: () => notificationsApi.unreadCount(),
     refetchInterval: NOTIFICATION_POLL_MS,
     staleTime: STALE_TIME.notifications,
@@ -46,7 +46,7 @@ export function AppShell({
   });
 
   const { data: profile } = useQuery({
-    queryKey: queryKeys.profile.me,
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
     staleTime: STALE_TIME.profile,
     enabled: shellEnabled,
@@ -54,7 +54,7 @@ export function AppShell({
 
   const accountPath =
     user?.type === 'user'
-      ? '/freelancer/conta'
+      ? '/freelancer/perfil/editar?secao=conta'
       : user?.type === 'company'
         ? '/empresa/conta'
         : null;

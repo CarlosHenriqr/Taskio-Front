@@ -19,7 +19,8 @@ import { fetchCompanyApplications } from '@/lib/companyJobs';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { invalidateApplications, invalidateCompany } from '@/lib/queryInvalidation';
-import { getInitials, formatRelativeDate } from '@/lib/utils';
+import { formatRelativeDate } from '@/lib/utils';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import type { JobStatus } from '@/types/api';
 
 export function EmpresaJobDetailPage() {
@@ -227,9 +228,11 @@ export function EmpresaJobDetailPage() {
                     to={`/empresa/candidatos/${app.id}`}
                     className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-surface-muted/50"
                   >
-                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
-                      {getInitials(app.user?.name ?? '?')}
-                    </div>
+                    <UserAvatar
+                      name={app.user?.name ?? 'Candidato'}
+                      avatarUrl={app.user?.avatarUrl}
+                      className="h-9 w-9 rounded-md text-xs"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{app.user?.name ?? 'Candidato'}</p>
                       <p className="text-xs text-muted-foreground">

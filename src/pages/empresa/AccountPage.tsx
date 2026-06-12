@@ -6,15 +6,18 @@ import { AvatarUpload } from '@/components/taskio/AvatarUpload';
 import { Btn, Card, Field, TextInput } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { profileApi } from '@/lib/api/profile.api';
 import { isValidPhone, normalizePhoneDigits } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
 import { invalidateProfile } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function EmpresaAccountPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -22,8 +25,9 @@ export function EmpresaAccountPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const profileQuery = useQuery({
-    queryKey: ['profile', 'me'],
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
+    enabled: !!user?.id,
   });
 
   useEffect(() => {

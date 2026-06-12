@@ -4,6 +4,7 @@ import { Pencil, Mail, Phone, Star, ExternalLink } from 'lucide-react';
 import { Btn, Card, Badge } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { profileApi } from '@/lib/api/profile.api';
@@ -12,19 +13,24 @@ import { getInitials } from '@/lib/utils';
 import { queryKeys } from '@/lib/queryKeys';
 
 export function MyProfileViewPage() {
+  const { user } = useAuth();
+
   const profileQuery = useQuery({
-    queryKey: queryKeys.profile.me,
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
+    enabled: !!user?.id,
   });
 
   const reviewsSummaryQuery = useQuery({
-    queryKey: ['reviews', 'summary'],
+    queryKey: queryKeys.reviews.summary(user!.id),
     queryFn: () => reviewsApi.summary(),
+    enabled: !!user?.id,
   });
 
   const reviewsQuery = useQuery({
-    queryKey: ['reviews', 'received', 1],
+    queryKey: queryKeys.reviews.received(user!.id, 1),
     queryFn: () => reviewsApi.received(1, 5),
+    enabled: !!user?.id,
   });
 
   usePageShell({

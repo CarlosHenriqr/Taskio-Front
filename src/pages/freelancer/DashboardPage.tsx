@@ -15,6 +15,7 @@ import { ListItemCard, MetaChip, SectionCard } from '@/components/shared/Content
 import { formatJobPayment } from '@/lib/jobPayment';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
@@ -22,6 +23,7 @@ import { applicationsApi } from '@/lib/api/applications.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { useRecommendedJobs } from '@/hooks/useRecommendedJobs';
 import { formatRelativeDate } from '@/lib/utils';
+import { queryKeys } from '@/lib/queryKeys';
 
 const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
@@ -36,16 +38,20 @@ function buildChartData(apps: { createdAt: string }[]) {
 }
 
 export function FreelancerDashboardPage() {
+  const { user } = useAuth();
+
   const appsQuery = useQuery({
-    queryKey: ['my-applications'],
+    queryKey: queryKeys.applications.all(user!.id),
     queryFn: () => applicationsApi.myApplications(),
+    enabled: !!user?.id,
   });
 
   const { jobs: recommendedJobs } = useRecommendedJobs(20);
 
   const reviewsQuery = useQuery({
-    queryKey: ['reviews', 'summary'],
+    queryKey: queryKeys.reviews.summary(user!.id),
     queryFn: () => reviewsApi.summary(),
+    enabled: !!user?.id,
   });
 
   const apps = appsQuery.data ?? [];

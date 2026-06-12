@@ -13,8 +13,10 @@ import {
 import { toast } from 'sonner';
 import { Btn } from '@/components/taskio/ui';
 import { ContentPanel, StatusAlertCard } from '@/components/shared/ContentCards';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
@@ -28,6 +30,7 @@ import { applicationsApi } from '@/lib/api/applications.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { formatRelativeDate, mapApiErrors } from '@/lib/utils';
 import { invalidateApplications } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ApplicationStatus } from '@/types/api';
 
 const CANCELLABLE: ApplicationStatus[] = ['PENDING', 'REVIEWED'];
@@ -106,12 +109,13 @@ export function FreelancerApplicationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   const detailQuery = useQuery({
-    queryKey: ['my-applications', id],
+    queryKey: queryKeys.applications.detail(user!.id, id!),
     queryFn: () => applicationsApi.getById(id!),
-    enabled: !!id,
+    enabled: !!id && !!user?.id,
   });
 
   const application = detailQuery.data;
@@ -286,17 +290,26 @@ export function FreelancerApplicationDetailPage() {
             )}
 
             <ContentPanel title="Empresa">
-              <p className="font-medium">{company?.name ?? '—'}</p>
-              {company?.email && (
-                <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" /> {company.email}
-                </p>
-              )}
-              {company?.phone && (
-                <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" /> {company.phone}
-                </p>
-              )}
+              <div className="flex items-start gap-3">
+                <UserAvatar
+                  name={company?.name ?? 'Empresa'}
+                  avatarUrl={company?.avatarUrl}
+                  tone="neutral"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{company?.name ?? '—'}</p>
+                  {company?.email && (
+                    <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" /> {company.email}
+                    </p>
+                  )}
+                  {company?.phone && (
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Phone className="h-3.5 w-3.5" /> {company.phone}
+                    </p>
+                  )}
+                </div>
+              </div>
             </ContentPanel>
 
             {application.status === 'ACCEPTED' && (

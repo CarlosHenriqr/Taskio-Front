@@ -6,8 +6,7 @@ import { AdminLayout, EmpresaLayout, FreelancerLayout } from '@/components/layou
 // Public
 import { LandingPage } from '@/pages/public/LandingPage';
 import { LoginPage } from '@/pages/public/LoginPage';
-import { RegisterFreelancerPage } from '@/pages/public/RegisterFreelancerPage';
-import { RegisterCompanyPage } from '@/pages/public/RegisterCompanyPage';
+import { RegisterPage } from '@/pages/public/RegisterPage';
 import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage';
 import { TermsPage } from '@/pages/public/TermsPage';
 import { PrivacyPage } from '@/pages/public/PrivacyPage';
@@ -52,9 +51,13 @@ export const router = createBrowserRouter([
         element: <GuestRoute />,
         children: [
           { path: 'login', element: <LoginPage /> },
-          { path: 'cadastro/freelancer', element: <RegisterFreelancerPage /> },
-          { path: 'cadastro/empresa', element: <RegisterCompanyPage /> },
+          { path: 'login/freelancer', element: <LoginPage initialType="user" /> },
+          { path: 'login/empresa', element: <LoginPage initialType="company" /> },
+          { path: 'cadastro', element: <RegisterPage /> },
+          { path: 'cadastro/freelancer', element: <RegisterPage initialType="user" /> },
+          { path: 'cadastro/empresa', element: <RegisterPage initialType="company" /> },
           { path: 'recuperar-senha', element: <ForgotPasswordPage /> },
+          { path: 'recuperar-senha/empresa', element: <ForgotPasswordPage accountType="company" /> },
         ],
       },
 

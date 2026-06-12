@@ -1,45 +1,52 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, User, Settings } from 'lucide-react';
 import { toast } from 'sonner';
-import { Btn, Card, Chip, Field, Select, TextArea, TextInput } from '@/components/taskio/ui';
+import { Btn, Card, Field, TextArea, TextInput } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
+import { AccountSettingsPanel } from '@/components/profile/AccountSettingsPanel';
+import { ExperienceSection } from '@/components/profile/ExperienceSection';
+import { TechStackPicker } from '@/components/profile/TechStackPicker';
 import { profileApi } from '@/lib/api/profile.api';
 import { technologiesApi } from '@/lib/api/technologies.api';
 import {
-  DEFAULT_JOB_ROLE,
-  JOB_ROLE_OTHER_VALUE,
-  jobRolesByCategory,
-  resolveRoleTitle,
-} from '@/lib/jobRoles';
-import { normalizePhoneDigits, validateFreelancerProfile } from '@/lib/profileValidation';
+  getResumeUrlError,
+  RESUME_URL_ERROR,
+  validateFreelancerProfile,
+} from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
 import { invalidateProfile } from '@/lib/queryInvalidation';
-import type {
-  CreateExperiencePayload,
-  Experience,
-  PortfolioItem,
-  SkillLevel,
-  Technology,
-} from '@/types/api';
+import { queryKeys } from '@/lib/queryKeys';
+import type { PortfolioItem, SkillLevel } from '@/types/api';
 
 const DEFAULT_SKILL_LEVEL: SkillLevel = 'BASICO';
 
+export type ProfileSection = 'professional' | 'account';
+
+function resolveSection(searchParams: URLSearchParams): ProfileSection {
+  return searchParams.get('secao') === 'conta' ? 'account' : 'professional';
+}
+
 export function FreelancerProfilePage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [section, setSection] = useState<ProfileSection>(() => resolveSection(searchParams));
   const [bio, setBio] = useState('');
-  const [phone, setPhone] = useState('');
   const [resumeUrl, setResumeUrl] = useState('');
   const [selectedTechIds, setSelectedTechIds] = useState<string[]>([]);
+  const [resumeUrlError, setResumeUrlError] = useState('');
 
   const profileQuery = useQuery({
-    queryKey: ['profile', 'me'],
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
+    enabled: !!user?.id,
   });
 
   const techQuery = useQuery({
@@ -47,16 +54,40 @@ export function FreelancerProfilePage() {
     queryFn: () => technologiesApi.list(),
   });
 
+  const profileHydratedRef = useRef(false);
+
   useEffect(() => {
-    if (profileQuery.data) {
-      setBio(profileQuery.data.bio ?? '');
-      setPhone(profileQuery.data.phone ?? '');
-      setResumeUrl(profileQuery.data.resumeUrl ?? '');
-      setSelectedTechIds(
-        profileQuery.data.techStack?.map((s) => s.technology.id) ?? [],
-      );
-    }
+    profileHydratedRef.current = false;
+  }, [user?.id]);
+
+  useEffect(() => {
+    setSection(resolveSection(searchParams));
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!profileQuery.data || profileHydratedRef.current) return;
+    profileHydratedRef.current = true;
+    setBio(profileQuery.data.bio ?? '');
+    setResumeUrl(profileQuery.data.resumeUrl ?? '');
+    setSelectedTechIds(
+      profileQuery.data.techStack?.map((s) => s.technology.id) ?? [],
+    );
   }, [profileQuery.data]);
+
+  const setProfileSection = (next: ProfileSection) => {
+    setSection(next);
+    if (next === 'account') {
+      setSearchParams({ secao: 'conta' }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
+
+  const validateResumeField = (value: string) => {
+    const err = getResumeUrlError(value);
+    setResumeUrlError(err ?? '');
+    return !err;
+  };
 
   const resumeMutation = useMutation({
     mutationFn: () => profileApi.updateResume(resumeUrl.trim()),
@@ -71,52 +102,111 @@ export function FreelancerProfilePage() {
     mutationFn: () => profileApi.deleteResume(),
     onSuccess: async () => {
       setResumeUrl('');
+      setResumeUrlError('');
       await invalidateProfile(queryClient);
       toast.success('Currículo removido.');
     },
     onError: (err) => toast.error(mapApiErrors(err).message),
   });
 
-  const handleSave = () => {
-    const err = validateFreelancerProfile(bio, phone, selectedTechIds.length);
+  const handleSaveRef = useRef<() => void>(() => {});
+
+  handleSaveRef.current = () => {
+    const effectiveResumeUrl = resumeUrl.trim() || profileQuery.data?.resumeUrl?.trim() || '';
+    const phone = profileQuery.data?.phone ?? '';
+    const err = validateFreelancerProfile(bio, phone, selectedTechIds.length, effectiveResumeUrl);
     if (err) {
+      if (err.includes('currículo') || err === RESUME_URL_ERROR) {
+        setResumeUrlError(err);
+      }
       toast.error(err);
       return;
     }
-    saveMutation.mutate();
+    setResumeUrlError('');
+    saveMutation.mutate(effectiveResumeUrl);
   };
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      const phoneDigits = normalizePhoneDigits(phone);
-      await profileApi.updateUser({ bio: bio.trim(), phone: phoneDigits });
+    mutationFn: async (effectiveResumeUrl: string) => {
+      const savedResumeUrl = profileQuery.data?.resumeUrl?.trim() ?? '';
+
+      if (effectiveResumeUrl && effectiveResumeUrl !== savedResumeUrl) {
+        try {
+          await profileApi.updateResume(effectiveResumeUrl);
+        } catch (err) {
+          console.error('[ProfilePage] resume save failed', err);
+          throw Object.assign(err instanceof Error ? err : new Error(String(err)), {
+            step: 'resume' as const,
+          });
+        }
+      }
+
+      try {
+        await profileApi.updateUser({ bio: bio.trim() });
+      } catch (err) {
+        console.error('[ProfilePage] bio save failed', err);
+        await invalidateProfile(queryClient);
+        throw Object.assign(err instanceof Error ? err : new Error(String(err)), {
+          step: 'profile' as const,
+        });
+      }
+
       const skills = selectedTechIds.map((technologyId) => ({
         technologyId,
         level: DEFAULT_SKILL_LEVEL,
       }));
-      await profileApi.updateTechStack(skills);
+
+      try {
+        await profileApi.updateTechStack(skills);
+      } catch (err) {
+        console.error('[ProfilePage] tech stack save failed', err);
+        await invalidateProfile(queryClient);
+        throw Object.assign(err instanceof Error ? err : new Error(String(err)), {
+          step: 'stack' as const,
+        });
+      }
     },
     onSuccess: async () => {
       await invalidateProfile(queryClient);
       toast.success('Perfil atualizado.');
       navigate('/freelancer/perfil');
     },
-    onError: (err) => toast.error(mapApiErrors(err).message),
+    onError: (err: Error & { step?: 'resume' | 'profile' | 'stack' }) => {
+      const { message } = mapApiErrors(err);
+      const stepMessages: Record<string, string> = {
+        resume: 'Erro ao publicar currículo',
+        profile: 'Erro ao salvar bio',
+        stack: 'Bio salva, mas falha ao salvar stack tecnológica',
+      };
+      const prefix = err.step ? stepMessages[err.step] : 'Erro ao salvar perfil';
+      toast.error(`${prefix}: ${message}`);
+    },
   });
 
   const profile = profileQuery.data;
-  const techs = techQuery.data ?? [];
+  const isProfessional = section === 'professional';
 
-  const techByCategory = useMemo(() => {
-    const groups = new Map<string, Technology[]>();
-    for (const t of techs) {
-      const cat = t.category ?? 'Outros';
-      const list = groups.get(cat) ?? [];
-      list.push(t);
-      groups.set(cat, list);
-    }
-    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [techs]);
+  usePageShell({
+    title: isProfessional ? 'Editar perfil' : 'Conta e segurança',
+    description: isProfessional
+      ? 'Atualize bio, stack, experiências e portfólio.'
+      : 'Gerencie foto, dados de acesso e senha.',
+    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    actionsRevision: `${section}:${profileQuery.isLoading}:${profileQuery.isError}:${saveMutation.isPending}`,
+    actions:
+      isProfessional && !profileQuery.isLoading && !profileQuery.isError ? (
+        <>
+          <Link to="/freelancer/perfil">
+            <Btn variant="secondary" size="sm">
+              <ArrowLeft className="h-3.5 w-3.5" /> Ver perfil
+            </Btn>
+          </Link>
+          <Btn size="sm" onClick={() => handleSaveRef.current()} disabled={saveMutation.isPending}>
+            <Save className="h-3.5 w-3.5" /> Salvar perfil
+          </Btn>
+        </>
+      ) : undefined,
+  });
 
   const toggleTech = (technologyId: string) => {
     setSelectedTechIds((prev) =>
@@ -126,28 +216,13 @@ export function FreelancerProfilePage() {
     );
   };
 
-  const selectedTechNames = useMemo(() => {
-    const idSet = new Set(selectedTechIds);
-    return techs.filter((t) => idSet.has(t.id)).map((t) => t.name);
-  }, [selectedTechIds, techs]);
-
-  usePageShell({
-    title: 'Editar perfil',
-    description: 'Atualize bio, stack, experiências e portfólio.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
-    actions: !profileQuery.isLoading && !profileQuery.isError ? (
-      <>
-        <Link to="/freelancer/perfil">
-          <Btn variant="secondary" size="sm">
-            <ArrowLeft className="h-3.5 w-3.5" /> Ver perfil
-          </Btn>
-        </Link>
-        <Btn size="sm" onClick={handleSave} disabled={saveMutation.isPending}>
-          <Save className="h-3.5 w-3.5" /> Salvar perfil
-        </Btn>
-      </>
-    ) : undefined,
-  });
+  const publishResume = () => {
+    if (!validateResumeField(resumeUrl)) {
+      toast.error(resumeUrlError || RESUME_URL_ERROR);
+      return;
+    }
+    resumeMutation.mutate();
+  };
 
   if (profileQuery.isLoading) {
     return <PageLoader />;
@@ -159,318 +234,135 @@ export function FreelancerProfilePage() {
 
   return (
     <PageTransition>
-        <div className="space-y-6">
-          <Card className="p-6">
-            <h3 className="font-display font-semibold">Dados pessoais</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Para alterar foto de perfil, use{' '}
-              <Link to="/freelancer/conta" className="font-medium text-primary hover:underline">
-                Configurar conta
-              </Link>
-              .
-            </p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <Field label="Bio" className="sm:col-span-2" required hint="Mínimo 10 caracteres">
-                <TextArea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} required />
-              </Field>
-              <Field label="Telefone" required hint="10 ou 11 dígitos (com DDD)">
-                <TextInput
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="48999999999"
-                  required
-                />
-              </Field>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="font-display font-semibold">Currículo</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Obrigatório para se candidatar a vagas. Informe um link público para seu CV (PDF no
-              Google Drive, Dropbox, LinkedIn, etc.).
-            </p>
-            <div className="mt-4 space-y-3">
-              <Field label="URL do currículo">
-                <TextInput
-                  type="url"
-                  value={resumeUrl}
-                  onChange={(e) => setResumeUrl(e.target.value)}
-                  placeholder="https://..."
-                />
-              </Field>
-              <div className="flex flex-wrap gap-2">
-                <Btn
-                  type="button"
-                  size="sm"
-                  disabled={!resumeUrl.trim() || resumeMutation.isPending}
-                  onClick={() => resumeMutation.mutate()}
-                >
-                  {resumeMutation.isPending ? 'Salvando...' : 'Publicar currículo'}
-                </Btn>
-                {profile?.resumeUrl && (
-                  <>
-                    <a href={profile.resumeUrl} target="_blank" rel="noreferrer">
-                      <Btn type="button" size="sm" variant="secondary">
-                        Ver currículo atual
-                      </Btn>
-                    </a>
-                    <Btn
-                      type="button"
-                      size="sm"
-                      variant="danger"
-                      disabled={deleteResumeMutation.isPending}
-                      onClick={() => deleteResumeMutation.mutate()}
-                    >
-                      Remover
-                    </Btn>
-                  </>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="font-display font-semibold">
-              Stack tecnológica <span className="text-destructive">*</span>
-            </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Selecione ao menos uma tecnologia. As alterações só são gravadas ao clicar em Salvar
-              perfil.
-            </p>
-            {techQuery.isLoading && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="h-7 w-20 animate-pulse rounded-md bg-surface-muted" />
-                ))}
-              </div>
-            )}
-            {techQuery.isError && (
-              <div className="mt-4">
-                <ErrorState onRetry={() => techQuery.refetch()} />
-              </div>
-            )}
-            {techQuery.isSuccess && techs.length === 0 && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Nenhuma tecnologia disponível no catálogo. Tente recarregar a página.
-              </p>
-            )}
-            {techQuery.isSuccess && techs.length > 0 && (
-              <div className="mt-4 space-y-4">
-                {techByCategory.map(([category, items]) => (
-                  <div key={category}>
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      {category}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {items.map((t) => {
-                        const selected = selectedTechIds.includes(t.id);
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => toggleTech(t.id)}
-                            className={`rounded-md border px-2 py-1 text-xs font-medium transition-colors ${
-                              selected
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'bg-surface-muted hover:border-primary/40'
-                            }`}
-                          >
-                            {t.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            {selectedTechNames.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {selectedTechNames.map((name) => (
-                  <Chip key={name}>{name}</Chip>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          <ExperienceSection
-            experiences={profile?.experiences ?? []}
-            onChange={() => invalidateProfile(queryClient)}
-          />
-          <PortfolioSection
-            items={profile?.portfolio ?? []}
-            onChange={() => invalidateProfile(queryClient)}
-          />
-        </div>
-    </PageTransition>
-  );
-}
-
-function ExperienceSection({
-  experiences,
-  onChange,
-}: {
-  experiences: Experience[];
-  onChange: () => void | Promise<void>;
-}) {
-  const [rolePreset, setRolePreset] = useState(DEFAULT_JOB_ROLE);
-  const [roleCustom, setRoleCustom] = useState('');
-  const [company, setCompany] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [isCurrent, setIsCurrent] = useState(false);
-  const [description, setDescription] = useState('');
-
-  const roleGroups = jobRolesByCategory();
-
-  const add = async () => {
-    const roleTitle = resolveRoleTitle(rolePreset, roleCustom);
-    if (!roleTitle) {
-      toast.error('Informe o cargo.');
-      return;
-    }
-    if (!company.trim()) {
-      toast.error('Informe a empresa.');
-      return;
-    }
-    if (!startDate) {
-      toast.error('Informe a data de início.');
-      return;
-    }
-    if (!isCurrent && endDate && new Date(endDate) < new Date(startDate)) {
-      toast.error('A data final não pode ser anterior à data de início.');
-      return;
-    }
-
-    try {
-      const payload: CreateExperiencePayload = {
-        companyName: company.trim(),
-        roleTitle,
-        startDate: `${startDate}T12:00:00.000Z`,
-        description: description.trim() || undefined,
-      };
-      if (!isCurrent && endDate) {
-        payload.endDate = `${endDate}T12:00:00.000Z`;
-      }
-
-      await profileApi.createExperience(payload);
-      toast.success('Experiência adicionada.');
-      setRolePreset(DEFAULT_JOB_ROLE);
-      setRoleCustom('');
-      setCompany('');
-      setStartDate('');
-      setEndDate('');
-      setIsCurrent(false);
-      setDescription('');
-      await onChange();
-    } catch (err) {
-      const { message, fields } = mapApiErrors(err);
-      const fieldMsg = Object.values(fields).find(Boolean);
-      toast.error(fieldMsg || message);
-    }
-  };
-
-  const remove = async (id: string) => {
-    try {
-      await profileApi.deleteExperience(id);
-      toast.success('Experiência removida.');
-      await onChange();
-    } catch {
-      toast.error('Erro ao remover.');
-    }
-  };
-
-  return (
-    <Card className="p-6">
-      <h3 className="font-display font-semibold">Experiências</h3>
-      <div className="mt-4 space-y-4">
-        {experiences.map((e) => (
-          <div key={e.id} className="flex items-start justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-semibold">{e.roleTitle ?? 'Cargo não informado'}</p>
-              <p className="text-xs text-muted-foreground">{e.companyName}</p>
-            </div>
-            <Btn size="sm" variant="ghost" onClick={() => remove(e.id)}>
-              <Trash2 className="h-4 w-4" />
+      <div className="space-y-6">
+        <Field label="Tipo de configuração">
+          <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Tipo de configuração">
+            <Btn
+              type="button"
+              role="tab"
+              aria-selected={isProfessional}
+              variant={isProfessional ? 'primary' : 'secondary'}
+              className="w-full"
+              onClick={() => setProfileSection('professional')}
+            >
+              <User className="h-4 w-4" /> Perfil profissional
+            </Btn>
+            <Btn
+              type="button"
+              role="tab"
+              aria-selected={!isProfessional}
+              variant={!isProfessional ? 'primary' : 'secondary'}
+              className="w-full"
+              onClick={() => setProfileSection('account')}
+            >
+              <Settings className="h-4 w-4" /> Conta e segurança
             </Btn>
           </div>
-        ))}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Cargo">
-            <Select
-              value={rolePreset}
-              onChange={(ev) => setRolePreset(ev.target.value)}
-            >
-              {roleGroups.map((g) => (
-                <optgroup key={g.category} label={g.category}>
-                  {g.roles.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-              <option value={JOB_ROLE_OTHER_VALUE}>Outro (informar abaixo)</option>
-            </Select>
-          </Field>
-          {rolePreset === JOB_ROLE_OTHER_VALUE && (
-            <Field label="Cargo personalizado">
-              <TextInput
-                placeholder="Ex.: Analista de Negócios"
-                value={roleCustom}
-                onChange={(ev) => setRoleCustom(ev.target.value)}
-              />
-            </Field>
-          )}
-          <Field label="Empresa">
-            <TextInput
-              placeholder="Nome da empresa"
-              value={company}
-              onChange={(ev) => setCompany(ev.target.value)}
-            />
-          </Field>
-          <Field label="Data de início">
-            <TextInput
-              type="date"
-              value={startDate}
-              onChange={(ev) => setStartDate(ev.target.value)}
-            />
-          </Field>
-          <Field label="Data de término">
-            <TextInput
-              type="date"
-              value={endDate}
-              disabled={isCurrent}
-              onChange={(ev) => setEndDate(ev.target.value)}
-            />
-          </Field>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={isCurrent}
-              onChange={(ev) => {
-                setIsCurrent(ev.target.checked);
-                if (ev.target.checked) setEndDate('');
-              }}
-              className="rounded border-input"
-            />
-            Trabalho atual (sem data de término)
-          </label>
-        </div>
-        <Field label="Descrição">
-          <TextArea
-            placeholder="Principais responsabilidades e resultados"
-            value={description}
-            onChange={(ev) => setDescription(ev.target.value)}
-            rows={2}
-          />
         </Field>
-        <Btn size="sm" variant="secondary" onClick={add}>
-          <Plus className="h-4 w-4" /> Adicionar experiência
-        </Btn>
+
+        {isProfessional ? (
+          <>
+            <Card className="p-6">
+              <h3 className="font-display font-semibold">Bio</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Descreva sua experiência e especialidades para empresas e o sistema de matching.
+              </p>
+              <div className="mt-4">
+                <Field label="Bio" required hint="Mínimo 10 caracteres">
+                  <TextArea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} required />
+                </Field>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-display font-semibold">Currículo</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Obrigatório para se candidatar. Cole um link público do seu CV em PDF hospedado no
+                Google Drive, Dropbox, OneDrive ou LinkedIn.
+              </p>
+              <div className="mt-4 space-y-3">
+                <Field
+                  label="URL do currículo"
+                  required
+                  error={resumeUrlError}
+                  hint="Ex.: drive.google.com, dropbox.com, onedrive.live.com, linkedin.com"
+                >
+                  <TextInput
+                    type="url"
+                    value={resumeUrl}
+                    onChange={(e) => {
+                      setResumeUrl(e.target.value);
+                      if (resumeUrlError) setResumeUrlError('');
+                    }}
+                    onBlur={() => {
+                      if (resumeUrl.trim()) validateResumeField(resumeUrl);
+                    }}
+                    placeholder="https://drive.google.com/file/d/..."
+                    required
+                  />
+                </Field>
+                <div className="flex flex-wrap gap-2">
+                  <Btn
+                    type="button"
+                    size="sm"
+                    disabled={!resumeUrl.trim() || resumeMutation.isPending}
+                    onClick={publishResume}
+                  >
+                    {resumeMutation.isPending ? 'Salvando...' : 'Publicar currículo'}
+                  </Btn>
+                  {profile?.resumeUrl && (
+                    <>
+                      <a href={profile.resumeUrl} target="_blank" rel="noreferrer">
+                        <Btn type="button" size="sm" variant="secondary">
+                          Ver currículo atual
+                        </Btn>
+                      </a>
+                      <Btn
+                        type="button"
+                        size="sm"
+                        variant="danger"
+                        disabled={deleteResumeMutation.isPending}
+                        onClick={() => deleteResumeMutation.mutate()}
+                      >
+                        Remover
+                      </Btn>
+                    </>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="font-display font-semibold">
+                Stack tecnológica <span className="text-destructive">*</span>
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Selecione ao menos uma tecnologia. Gravado ao clicar em Salvar perfil.
+              </p>
+              <TechStackPicker
+                technologies={techQuery.data ?? []}
+                selectedIds={selectedTechIds}
+                onToggle={toggleTech}
+                isLoading={techQuery.isLoading}
+                isError={techQuery.isError}
+                onRetry={() => techQuery.refetch()}
+              />
+            </Card>
+
+            <ExperienceSection
+              experiences={profile?.experiences ?? []}
+              onChange={() => invalidateProfile(queryClient)}
+            />
+            <PortfolioSection
+              items={profile?.portfolio ?? []}
+              onChange={() => invalidateProfile(queryClient)}
+            />
+          </>
+        ) : (
+          <AccountSettingsPanel profile={profile!} />
+        )}
       </div>
-    </Card>
+    </PageTransition>
   );
 }
 
@@ -531,7 +423,12 @@ function PortfolioSection({
           <TextInput placeholder="Título" value={title} onChange={(e) => setTitle(e.target.value)} />
           <TextInput placeholder="URL" value={url} onChange={(e) => setUrl(e.target.value)} />
         </div>
-        <TextArea placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+        <TextArea
+          placeholder="Descrição"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={2}
+        />
         <Btn size="sm" variant="secondary" onClick={add}>
           <Plus className="h-4 w-4" /> Adicionar ao portfólio
         </Btn>

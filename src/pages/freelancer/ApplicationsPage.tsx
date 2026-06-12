@@ -3,28 +3,32 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Briefcase } from 'lucide-react';
 import { Btn, EmptyState } from '@/components/taskio/ui';
-import { AvatarBadge, EntityListCard, FilterBar } from '@/components/shared/ContentCards';
+import { EntityListCard, FilterBar } from '@/components/shared/ContentCards';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import {
   ApplicationStatusFilter,
   buildApplicationStatusCounts,
   type ApplicationStatusFilterValue,
 } from '@/components/shared/filters/applicationStatusFilter';
 import { formatJobPayment } from '@/lib/jobPayment';
-import { getInitials } from '@/lib/utils';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
 import { applicationsApi } from '@/lib/api/applications.api';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatRelativeDate } from '@/lib/utils';
 
 export function FreelancerApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState<ApplicationStatusFilterValue>('');
+  const { user } = useAuth();
 
   const query = useQuery({
-    queryKey: ['my-applications'],
+    queryKey: queryKeys.applications.all(user!.id),
     queryFn: () => applicationsApi.myApplications(),
+    enabled: !!user?.id,
   });
 
   const allApps = query.data ?? [];
@@ -96,9 +100,11 @@ export function FreelancerApplicationsPage() {
                 key={a.id}
                 to={`/freelancer/trabalhos/${a.id}`}
                 avatar={
-                  <AvatarBadge tone="neutral">
-                    {getInitials(a.job?.company?.name ?? 'E')}
-                  </AvatarBadge>
+                  <UserAvatar
+                    name={a.job?.company?.name ?? 'Empresa'}
+                    avatarUrl={a.job?.company?.avatarUrl}
+                    tone="neutral"
+                  />
                 }
                 title={a.job?.title ?? 'Projeto'}
                 subtitle={`${a.job?.company?.name ?? 'Empresa'} · ${formatRelativeDate(a.createdAt)}`}

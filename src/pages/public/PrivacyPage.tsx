@@ -162,7 +162,7 @@ export function PrivacyPage() {
             'hash de senhas e autenticação por tokens JWT com renovação controlada;',
             'controle de acesso por tipo de conta (freelancer, empresa, admin);',
             'validação de entrada, limitação de taxa (rate limit) em endpoints sensíveis;',
-            'armazenamento de tokens de sessão no navegador (localStorage) apenas no dispositivo do usuário.',
+            'armazenamento de tokens de sessão no navegador (sessionStorage por padrão; localStorage apenas se o usuário marcar "Lembrar de mim") apenas no dispositivo do usuário.',
           ]}
         />
         <p>
@@ -174,8 +174,11 @@ export function PrivacyPage() {
 
       <LegalSection title="10. Cookies e tecnologias similares">
         <p>
-          A aplicação utiliza principalmente <strong>armazenamento local do navegador</strong>{' '}
-          (localStorage) para manter sessão autenticada (tokens e dados básicos do usuário). Não
+          A aplicação utiliza <strong>armazenamento local do navegador</strong> para manter sessão
+          autenticada (tokens e dados básicos do usuário). Por padrão, a sessão fica em{' '}
+          <strong>sessionStorage</strong> e encerra ao fechar o navegador. Se o usuário marcar
+          &quot;Lembrar de mim&quot;, os dados são persistidos em <strong>localStorage</strong>.
+          Não
           utilizamos, na versão atual, cookies de rastreamento publicitário de terceiros.
         </p>
         <p>

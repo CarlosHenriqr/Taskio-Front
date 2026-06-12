@@ -13,9 +13,11 @@ import {
   clearAuthSession,
   getRefreshToken,
   getStoredUser,
+  migrateLegacyAuthStorage,
   refreshAccessToken,
 } from '@/lib/api/client';
 import { getDashboardPath } from '@/lib/nav';
+import { queryClient } from '@/lib/queryClient';
 import type { AuthUser } from '@/types/api';
 import { toast } from 'sonner';
 
@@ -24,9 +26,9 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitializing: boolean;
-  login: (payload: LoginPayload) => Promise<string>;
-  registerUser: (payload: RegisterUserPayload) => Promise<string>;
-  registerCompany: (payload: RegisterCompanyPayload) => Promise<string>;
+  login: (payload: LoginPayload, rememberMe?: boolean) => Promise<string>;
+  registerUser: (payload: RegisterUserPayload, rememberMe?: boolean) => Promise<string>;
+  registerCompany: (payload: RegisterCompanyPayload, rememberMe?: boolean) => Promise<string>;
   logout: () => Promise<void>;
 };
 
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onSessionExpired = () => {
+      queryClient.clear();
       setUser(null);
       toast.error('Sua sessão expirou. Faça login novamente.');
     };
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     async function bootstrapSession() {
+      migrateLegacyAuthStorage();
       const storedUser = getStoredUser();
       const refreshToken = getRefreshToken();
       if (!storedUser || !refreshToken) {
@@ -57,10 +61,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const tokens = await refreshAccessToken({ silent: true });
-      if (!tokens && !cancelled) {
+      const result = await refreshAccessToken({ silent: true });
+      if (!result && !cancelled) {
         clearAuthSession();
         setUser(null);
+      } else if (result?.user && !cancelled) {
+        setUser(result.user);
       }
       if (!cancelled) setIsInitializing(false);
     }
@@ -71,11 +77,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (payload: LoginPayload) => {
+  const login = useCallback(async (payload: LoginPayload, rememberMe = false) => {
     setIsLoading(true);
     try {
       const data = await authApi.login(payload);
-      authApi.persistSession(data);
+      queryClient.clear();
+      authApi.persistSession(data, rememberMe);
       setUser(data.user);
       return getDashboardPath(data.user.type, data.user.role);
     } finally {
@@ -83,11 +90,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const registerUser = useCallback(async (payload: RegisterUserPayload) => {
+  const registerUser = useCallback(async (payload: RegisterUserPayload, rememberMe = false) => {
     setIsLoading(true);
     try {
       const data = await authApi.registerUser(payload);
-      authApi.persistSession(data);
+      queryClient.clear();
+      authApi.persistSession(data, rememberMe);
       setUser(data.user);
       return getDashboardPath(data.user.type, data.user.role);
     } finally {
@@ -95,11 +103,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const registerCompany = useCallback(async (payload: RegisterCompanyPayload) => {
+  const registerCompany = useCallback(async (payload: RegisterCompanyPayload, rememberMe = false) => {
     setIsLoading(true);
     try {
       const data = await authApi.registerCompany(payload);
-      authApi.persistSession(data);
+      queryClient.clear();
+      authApi.persistSession(data, rememberMe);
       setUser(data.user);
       return getDashboardPath(data.user.type, data.user.role);
     } finally {
@@ -118,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       clearAuthSession();
     } finally {
+      queryClient.clear();
       setUser(null);
     }
   }, []);

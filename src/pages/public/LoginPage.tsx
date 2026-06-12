@@ -1,38 +1,49 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, Building2, User } from 'lucide-react';
-import { toast } from 'sonner';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Building2, User } from 'lucide-react';
 import { Logo } from '@/components/taskio/Logo';
 import { LoginTestimonialsPanel } from '@/components/taskio/LoginTestimonialsPanel';
-import { Btn, Field, TextInput } from '@/components/taskio/ui';
+import { LoginFreelancerForm } from '@/components/auth/LoginFreelancerForm';
+import { LoginCompanyForm } from '@/components/auth/LoginCompanyForm';
+import { Btn, Field } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
-import { useAuth } from '@/contexts/AuthContext';
-import { mapApiErrors } from '@/lib/utils';
 
-export function LoginPage() {
+export type LoginAccountType = 'user' | 'company';
+
+const LOGIN_PATHS = {
+  user: '/login',
+  company: '/login/empresa',
+} as const;
+
+function resolveTypeFromPath(pathname: string): LoginAccountType {
+  if (pathname.endsWith('/empresa')) return 'company';
+  return 'user';
+}
+
+type LoginPageProps = {
+  initialType?: LoginAccountType;
+};
+
+export function LoginPage({ initialType }: LoginPageProps) {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
-  const [type, setType] = useState<'user' | 'company'>('user');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState('');
+  const [accountType, setAccountType] = useState<LoginAccountType>(
+    () => initialType ?? resolveTypeFromPath(location.pathname),
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({});
-    setFormError('');
-    try {
-      const path = await login({ email: identifier.trim(), password, type });
-      navigate(path);
-      toast.success('Login realizado com sucesso!');
-    } catch (err) {
-      const { message, fields } = mapApiErrors(err);
-      setFormError(message);
-      setErrors(fields);
-      toast.error(message);
-    }
+  useEffect(() => {
+    setAccountType(initialType ?? resolveTypeFromPath(location.pathname));
+  }, [location.pathname, initialType]);
+
+  const setType = (type: LoginAccountType) => {
+    setAccountType(type);
+    navigate(LOGIN_PATHS[type], { replace: true });
   };
+
+  const sliderTransform = useMemo(
+    () => (accountType === 'user' ? 'translateX(0)' : 'translateX(-50%)'),
+    [accountType],
+  );
 
   return (
     <PageTransition>
@@ -50,12 +61,20 @@ export function LoginPage() {
               Use suas credenciais TASKIO para acessar o workspace.
             </p>
 
-            <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+            <div className="mt-8">
               <Field label="Tipo de conta">
-                <div className="grid grid-cols-2 gap-2">
+                <div
+                  className="grid grid-cols-2 gap-2"
+                  role="tablist"
+                  aria-label="Tipo de conta"
+                >
                   <Btn
                     type="button"
-                    variant={type === 'user' ? 'primary' : 'secondary'}
+                    role="tab"
+                    aria-selected={accountType === 'user'}
+                    aria-pressed={accountType === 'user'}
+                    aria-controls="login-panel-freelancer"
+                    variant={accountType === 'user' ? 'primary' : 'secondary'}
                     className="w-full"
                     onClick={() => setType('user')}
                   >
@@ -63,7 +82,11 @@ export function LoginPage() {
                   </Btn>
                   <Btn
                     type="button"
-                    variant={type === 'company' ? 'primary' : 'secondary'}
+                    role="tab"
+                    aria-selected={accountType === 'company'}
+                    aria-pressed={accountType === 'company'}
+                    aria-controls="login-panel-company"
+                    variant={accountType === 'company' ? 'primary' : 'secondary'}
                     className="w-full"
                     onClick={() => setType('company')}
                   >
@@ -71,51 +94,36 @@ export function LoginPage() {
                   </Btn>
                 </div>
               </Field>
-              <Field
-                label={type === 'user' ? 'E-mail ou CPF' : 'E-mail ou CNPJ'}
-                htmlFor="identifier"
-                error={errors.email}
-              >
-                <TextInput
-                  id="identifier"
-                  type="text"
-                  autoComplete="username"
-                  placeholder={type === 'user' ? 'seu@email.com ou CPF' : 'seu@email.com ou CNPJ'}
-                  icon={Mail}
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  required
-                />
-              </Field>
-              <Field label="Senha" htmlFor="senha" error={errors.password}>
-                <TextInput
-                  id="senha"
-                  type="password"
-                  placeholder="••••••••"
-                  icon={Lock}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <Link
-                  to="/recuperar-senha"
-                  className="mt-1 inline-block text-xs font-medium text-primary link-underline"
+
+              <div className="mt-4 overflow-hidden">
+                <div
+                  className="flex w-[200%] transition-transform duration-[350ms] ease-out"
+                  style={{ transform: sliderTransform }}
                 >
-                  Esqueci minha senha
-                </Link>
-              </Field>
-              {formError && !Object.keys(errors).length && (
-                <p className="text-sm text-destructive">{formError}</p>
-              )}
-              <Btn type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading ? 'Entrando...' : 'Entrar'} <ArrowRight className="h-4 w-4" />
-              </Btn>
-            </form>
+                  <div
+                    className="w-1/2 shrink-0 pr-0"
+                    role="tabpanel"
+                    id="login-panel-freelancer"
+                    aria-hidden={accountType !== 'user'}
+                  >
+                    <LoginFreelancerForm aria-hidden={accountType !== 'user'} />
+                  </div>
+                  <div
+                    className="w-1/2 shrink-0 pl-0"
+                    role="tabpanel"
+                    id="login-panel-company"
+                    aria-hidden={accountType !== 'company'}
+                  >
+                    <LoginCompanyForm aria-hidden={accountType !== 'company'} />
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <p className="mt-8 text-center text-sm text-muted-foreground">
               Não possui uma conta?{' '}
               <Link
-                to="/cadastro/freelancer"
+                to="/cadastro"
                 className="font-semibold text-primary link-underline"
               >
                 Criar conta

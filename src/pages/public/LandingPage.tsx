@@ -89,7 +89,7 @@ export function LandingPage() {
                   Entrar
                 </Btn>
               </Link>
-              <Link to="/cadastro/empresa">
+              <Link to="/cadastro">
                 <Btn size="sm">
                   Criar conta
                   <ArrowRight className="h-3.5 w-3.5" />

@@ -3,7 +3,8 @@ import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ExternalLink, Mail, Phone } from 'lucide-react';
 import { Btn } from '@/components/taskio/ui';
-import { AvatarBadge, ContentPanel, TechPill } from '@/components/shared/ContentCards';
+import { ContentPanel, TechPill } from '@/components/shared/ContentCards';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
@@ -18,7 +19,7 @@ import { profileApi } from '@/lib/api/profile.api';
 import { reviewsApi } from '@/lib/api/reviews.api';
 import { computeSkillMatch } from '@/lib/matching.util';
 import { invalidateApplications } from '@/lib/queryInvalidation';
-import { getInitials, formatRelativeDate } from '@/lib/utils';
+import { formatRelativeDate } from '@/lib/utils';
 
 export function EmpresaCandidateDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -99,9 +100,11 @@ export function EmpresaCandidateDetailPage() {
           <div className="space-y-5">
             <ContentPanel>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <AvatarBadge className="h-20 w-20 text-2xl">
-                  {getInitials(candidateName)}
-                </AvatarBadge>
+                <UserAvatar
+                  name={candidateName}
+                  avatarUrl={profile?.avatarUrl ?? application.user?.avatarUrl}
+                  className="h-20 w-20 text-2xl"
+                />
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="font-display text-2xl font-bold tracking-tight">{candidateName}</h2>

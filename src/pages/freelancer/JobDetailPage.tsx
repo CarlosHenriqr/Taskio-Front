@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Btn, Card, Field, TextArea } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { JobDescriptionView } from '@/components/shared/JobDescriptionView';
@@ -16,12 +17,14 @@ import { jobsApi } from '@/lib/api/jobs.api';
 import { profileApi } from '@/lib/api/profile.api';
 import { mapApiErrors } from '@/lib/utils';
 import { invalidateApplications } from '@/lib/queryInvalidation';
+import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError } from '@/lib/api/client';
 
 export function FreelancerJobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [coverLetter, setCoverLetter] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -32,8 +35,9 @@ export function FreelancerJobDetailPage() {
   });
 
   const profileQuery = useQuery({
-    queryKey: ['profile', 'me'],
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
+    enabled: !!user?.id,
   });
 
   const hasResume = !!profileQuery.data?.resumeUrl?.trim();

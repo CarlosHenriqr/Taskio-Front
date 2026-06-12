@@ -26,6 +26,8 @@ export type RegisterCompanyPayload = {
 
 type AuthResponse = AuthTokens & { user: AuthUser };
 
+export type PasswordResetAccountType = 'user' | 'company';
+
 export const authApi = {
   login: (payload: LoginPayload) =>
     apiRequest<AuthResponse>('/auth/login', { method: 'POST', body: payload, auth: false }),
@@ -44,17 +46,17 @@ export const authApi = {
     }
   },
 
-  forgotPassword: (email: string) =>
+  forgotPassword: (email: string, type: PasswordResetAccountType = 'user') =>
     apiRequest<void>('/auth/password/forgot', {
       method: 'POST',
-      body: { email: email.trim().toLowerCase() },
+      body: { email: email.trim().toLowerCase(), type },
       auth: false,
     }),
 
-  verifyResetCode: (email: string, code: string) =>
+  verifyResetCode: (email: string, code: string, type: PasswordResetAccountType = 'user') =>
     apiRequest<void>('/auth/password/verify-code', {
       method: 'POST',
-      body: { email: email.trim().toLowerCase(), code: code.trim() },
+      body: { email: email.trim().toLowerCase(), code: code.trim(), type },
       auth: false,
     }),
 
@@ -63,6 +65,7 @@ export const authApi = {
     code: string;
     newPassword: string;
     confirmNewPassword: string;
+    type?: PasswordResetAccountType;
   }) =>
     apiRequest<void>('/auth/password/reset', {
       method: 'POST',
@@ -70,14 +73,16 @@ export const authApi = {
         ...payload,
         email: payload.email.trim().toLowerCase(),
         code: payload.code.trim(),
+        type: payload.type ?? 'user',
       },
       auth: false,
     }),
 
-  persistSession(data: AuthResponse) {
+  persistSession(data: AuthResponse, rememberMe = false) {
     setAuthSession(
       { accessToken: data.accessToken, refreshToken: data.refreshToken },
       data.user,
+      { rememberMe },
     );
   },
 };

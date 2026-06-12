@@ -39,7 +39,7 @@ export async function invalidatePublicJobs(queryClient: QueryClient): Promise<vo
 
 export async function invalidateApplications(queryClient: QueryClient): Promise<void> {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.applications.all }),
+    queryClient.invalidateQueries({ queryKey: ['my-applications'] }),
     invalidateCompanyApplications(queryClient),
   ]);
 }
@@ -58,8 +58,7 @@ export async function invalidateAfterJobPublish(queryClient: QueryClient): Promi
 
 export async function invalidateNotifications(queryClient: QueryClient): Promise<void> {
   await Promise.all([
-    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
-    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount }),
+    queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   ]);
 }
 

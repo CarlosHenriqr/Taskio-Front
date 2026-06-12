@@ -4,6 +4,7 @@ import { Btn } from '@/components/taskio/ui';
 import { JobStatusBadge } from '@/components/shared/StatusBadge';
 import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
 import { MetaChip, TechPill, interactiveCardClass } from '@/components/shared/ContentCards';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import type { Job } from '@/types/api';
 import { formatRelativeDate } from '@/lib/utils';
 import { getJobDescriptionPreview } from '@/lib/jobDescription.util';
@@ -31,7 +32,15 @@ export function JobCard({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <MetaChip icon={Building2}>{job.company?.name ?? 'Empresa'}</MetaChip>
+            <div className="inline-flex items-center gap-2">
+              <UserAvatar
+                name={job.company?.name ?? 'Empresa'}
+                avatarUrl={job.company?.avatarUrl}
+                tone="neutral"
+                className="h-7 w-7 rounded-lg text-[10px]"
+              />
+              <MetaChip icon={Building2}>{job.company?.name ?? 'Empresa'}</MetaChip>
+            </div>
             <MetaChip icon={Clock}>{formatRelativeDate(job.createdAt)}</MetaChip>
             {matchPercent !== undefined && (
               <MatchScoreBadge score={matchPercent} suffix="compatível" />

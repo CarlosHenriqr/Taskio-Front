@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
 import { jobsApi } from '@/lib/api/jobs.api';
 import { profileApi } from '@/lib/api/profile.api';
 import { rankJobsByProfileMatch } from '@/lib/matching.util';
@@ -7,14 +8,17 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { MatchingJob } from '@/types/api';
 
 export function useRecommendedJobs(limit?: number) {
+  const { user } = useAuth();
+
   const jobsQuery = useQuery({
     queryKey: queryKeys.jobs.list('active'),
     queryFn: () => jobsApi.list({ active: true }),
   });
 
   const profileQuery = useQuery({
-    queryKey: queryKeys.profile.me,
+    queryKey: queryKeys.profile.me(user!.id),
     queryFn: () => profileApi.me(),
+    enabled: !!user?.id,
   });
 
   const jobs = useMemo((): MatchingJob[] => {

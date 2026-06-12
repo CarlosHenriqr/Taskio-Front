@@ -16,6 +16,8 @@ export type PageShellConfig = {
   description?: string;
   primaryAction?: { label: string; to: string };
   actions?: ReactNode;
+  /** Bump when header actions UI must refresh (e.g. loading/disabled). Handlers should use refs. */
+  actionsRevision?: string | number;
 };
 
 type ShellLayoutConfig = {
@@ -37,7 +39,8 @@ function shellFieldsEqual(a: PageShellConfig, b: PageShellConfig): boolean {
     a.title === b.title &&
     a.description === b.description &&
     a.primaryAction?.label === b.primaryAction?.label &&
-    a.primaryAction?.to === b.primaryAction?.to
+    a.primaryAction?.to === b.primaryAction?.to &&
+    a.actionsRevision === b.actionsRevision
   );
 }
 

@@ -1,7 +1,7 @@
 export const queryKeys = {
   profile: {
     all: ['profile'] as const,
-    me: ['profile', 'me'] as const,
+    me: (userId: string) => ['profile', 'me', userId] as const,
     public: (userId: string) => ['profile', 'public', userId] as const,
   },
   company: {
@@ -19,9 +19,9 @@ export const queryKeys = {
     detail: (id: string) => ['jobs', id] as const,
   },
   applications: {
-    all: ['my-applications'] as const,
-    list: (statusFilter: string) => ['my-applications', statusFilter] as const,
-    detail: (id: string) => ['my-applications', id] as const,
+    all: (userId: string) => ['my-applications', userId] as const,
+    list: (userId: string, statusFilter: string) => ['my-applications', userId, statusFilter] as const,
+    detail: (userId: string, id: string) => ['my-applications', userId, id] as const,
   },
   matching: {
     all: ['matching'] as const,
@@ -29,15 +29,16 @@ export const queryKeys = {
     candidates: (jobId: string) => ['matching', 'candidates', jobId] as const,
   },
   notifications: {
-    all: ['notifications'] as const,
-    unreadCount: ['notifications', 'unread-count'] as const,
+    all: (userId: string) => ['notifications', userId] as const,
+    unreadCount: (userId: string) => ['notifications', userId, 'unread-count'] as const,
+    panel: (userId: string) => ['notifications', userId, 'panel'] as const,
   },
   technologies: {
     all: ['technologies'] as const,
   },
   reviews: {
-    summary: ['reviews', 'summary'] as const,
-    received: (page: number) => ['reviews', 'received', page] as const,
+    summary: (userId: string) => ['reviews', userId, 'summary'] as const,
+    received: (userId: string, page: number) => ['reviews', userId, 'received', page] as const,
   },
   admin: {
     users: (type: string) => ['admin', 'users', type] as const,

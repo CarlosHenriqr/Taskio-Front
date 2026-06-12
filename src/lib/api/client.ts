@@ -4,17 +4,38 @@ import { API_BASE } from '@/lib/api/config';
 const TOKEN_KEY = 'taskio_access_token';
 const REFRESH_KEY = 'taskio_refresh_token';
 const USER_KEY = 'taskio_user';
+const REMEMBER_ME_KEY = 'taskio_remember_me';
+
+const AUTH_KEYS = [TOKEN_KEY, REFRESH_KEY, USER_KEY] as const;
+
+function isRememberMeEnabled(): boolean {
+  return localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+}
+
+function getAuthStorage(): Storage {
+  return isRememberMeEnabled() ? localStorage : sessionStorage;
+}
+
+function clearStorageKeys(storage: Storage): void {
+  for (const key of AUTH_KEYS) {
+    storage.removeItem(key);
+  }
+}
+
+function clearLegacyLocalStorageAuth(): void {
+  clearStorageKeys(localStorage);
+}
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return getAuthStorage().getItem(TOKEN_KEY);
 }
 
 export function getRefreshToken(): string | null {
-  return localStorage.getItem(REFRESH_KEY);
+  return getAuthStorage().getItem(REFRESH_KEY);
 }
 
 export function getStoredUser(): AuthUser | null {
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = getAuthStorage().getItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as AuthUser;
@@ -23,16 +44,58 @@ export function getStoredUser(): AuthUser | null {
   }
 }
 
-export function setAuthSession(tokens: AuthTokens, user: AuthUser): void {
-  localStorage.setItem(TOKEN_KEY, tokens.accessToken);
-  localStorage.setItem(REFRESH_KEY, tokens.refreshToken);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+export type SetAuthSessionOptions = {
+  rememberMe?: boolean;
+};
+
+export function setAuthSession(
+  tokens: AuthTokens,
+  user: AuthUser,
+  options: SetAuthSessionOptions = {},
+): void {
+  const rememberMe = options.rememberMe ?? isRememberMeEnabled();
+  localStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
+
+  const target = rememberMe ? localStorage : sessionStorage;
+  const other = rememberMe ? sessionStorage : localStorage;
+
+  clearStorageKeys(other);
+  if (!rememberMe) {
+    clearLegacyLocalStorageAuth();
+  }
+
+  target.setItem(TOKEN_KEY, tokens.accessToken);
+  target.setItem(REFRESH_KEY, tokens.refreshToken);
+  target.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearAuthSession(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(REFRESH_KEY);
-  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(REMEMBER_ME_KEY);
+  clearStorageKeys(localStorage);
+  clearStorageKeys(sessionStorage);
+}
+
+export function migrateLegacyAuthStorage(): void {
+  if (localStorage.getItem(REMEMBER_ME_KEY) !== null) return;
+
+  const hasLegacyTokens =
+    localStorage.getItem(TOKEN_KEY) || localStorage.getItem(REFRESH_KEY) || localStorage.getItem(USER_KEY);
+
+  if (!hasLegacyTokens) return;
+
+  const accessToken = localStorage.getItem(TOKEN_KEY);
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  const userRaw = localStorage.getItem(USER_KEY);
+
+  if (accessToken && refreshToken && userRaw) {
+    try {
+      const user = JSON.parse(userRaw) as AuthUser;
+      setAuthSession({ accessToken, refreshToken }, user, { rememberMe: true });
+      return;
+    } catch {
+      clearLegacyLocalStorageAuth();
+    }
+  }
 }
 
 export const AUTH_SESSION_EXPIRED_EVENT = 'taskio:auth-session-expired';
@@ -42,9 +105,11 @@ export function notifyAuthSessionExpired(): void {
   window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
 }
 
-let refreshPromise: Promise<AuthTokens | null> | null = null;
+let refreshPromise: Promise<(AuthTokens & { user?: AuthUser }) | null> | null = null;
 
-export async function refreshAccessToken(options?: { silent?: boolean }): Promise<AuthTokens | null> {
+export async function refreshAccessToken(options?: {
+  silent?: boolean;
+}): Promise<(AuthTokens & { user?: AuthUser }) | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
 
@@ -61,9 +126,17 @@ export async function refreshAccessToken(options?: { silent?: boolean }): Promis
           return null;
         }
         const json = (await res.json()) as ApiSuccess<AuthTokens & { user?: AuthUser }>;
-        localStorage.setItem(TOKEN_KEY, json.data.accessToken);
-        localStorage.setItem(REFRESH_KEY, json.data.refreshToken);
-        return { accessToken: json.data.accessToken, refreshToken: json.data.refreshToken };
+        const storage = getAuthStorage();
+        storage.setItem(TOKEN_KEY, json.data.accessToken);
+        storage.setItem(REFRESH_KEY, json.data.refreshToken);
+        if (json.data.user) {
+          storage.setItem(USER_KEY, JSON.stringify(json.data.user));
+        }
+        return {
+          accessToken: json.data.accessToken,
+          refreshToken: json.data.refreshToken,
+          user: json.data.user,
+        };
       } catch {
         if (!options?.silent) notifyAuthSessionExpired();
         return null;

@@ -22,13 +22,13 @@ import {
 } from 'recharts';
 import { Badge, Btn, StatCard } from '@/components/taskio/ui';
 import {
-  AvatarBadge,
   HighlightCard,
   ListItemCard,
   MetaChip,
   SectionCard,
   TechPill,
 } from '@/components/shared/ContentCards';
+import { UserAvatar } from '@/components/shared/UserAvatar';
 import { formatJobPayment } from '@/lib/jobPayment';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
@@ -40,7 +40,7 @@ import { ApiRequestError } from '@/lib/api/client';
 import { fetchCompanyApplications, fetchCompanyJobs } from '@/lib/companyJobs';
 import { matchingApi } from '@/lib/api/matching.api';
 import { filterByMinMatch } from '@/lib/matching.util';
-import { getInitials, formatRelativeDate } from '@/lib/utils';
+import { formatRelativeDate } from '@/lib/utils';
 import type { Application, Job, RecommendedCandidate } from '@/types/api';
 
 type RecommendedForJob = RecommendedCandidate & {
@@ -288,7 +288,7 @@ export function EmpresaDashboardPage() {
                 return (
                   <HighlightCard key={`${c.jobId}-${c.id}`}>
                     <div className="flex items-start gap-3">
-                      <AvatarBadge>{getInitials(c.name)}</AvatarBadge>
+                      <UserAvatar name={c.name} avatarUrl={c.avatarUrl} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
                           <p className="truncate font-display text-sm font-semibold">{c.name}</p>
