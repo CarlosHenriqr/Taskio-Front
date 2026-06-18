@@ -105,6 +105,7 @@ export function LoginPage({ initialType }: LoginPageProps) {
                     role="tabpanel"
                     id="login-panel-freelancer"
                     aria-hidden={accountType !== 'user'}
+                    inert={accountType !== 'user' ? true : undefined}
                   >
                     <LoginFreelancerForm aria-hidden={accountType !== 'user'} />
                   </div>
@@ -113,6 +114,7 @@ export function LoginPage({ initialType }: LoginPageProps) {
                     role="tabpanel"
                     id="login-panel-company"
                     aria-hidden={accountType !== 'company'}
+                    inert={accountType !== 'company' ? true : undefined}
                   >
                     <LoginCompanyForm aria-hidden={accountType !== 'company'} />
                   </div>

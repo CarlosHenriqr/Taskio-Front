@@ -73,6 +73,13 @@ export function mapApiErrors(err: unknown): { message: string; fields: Record<st
         fields[key] = msgs[0] ?? '';
       }
     }
+    if (err.code === 'INVALID_CREDENTIALS') {
+      return {
+        message:
+          'E-mail/CPF/CNPJ ou senha incorretos. Confira o tipo de conta (Freelancer ou Empresa) e se o cadastro foi feito neste ambiente.',
+        fields: { ...fields, email: fields.email ?? 'Verifique o identificador informado.' },
+      };
+    }
     if (err.code === 'SESSION_EXPIRED') {
       return { message: 'Sua sessão expirou. Faça login novamente.', fields };
     }
