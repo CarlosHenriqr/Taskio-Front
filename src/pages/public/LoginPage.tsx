@@ -47,8 +47,8 @@ export function LoginPage({ initialType }: LoginPageProps) {
 
   return (
     <PageTransition>
-      <div className="grid min-h-screen lg:grid-cols-[1fr_1.1fr]">
-        <div className="flex flex-col px-6 py-10 sm:px-12">
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1fr_1.1fr]">
+        <div className="order-1 flex flex-col px-6 py-10 sm:px-12">
           <Logo />
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
             <p className="font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
@@ -135,7 +135,9 @@ export function LoginPage({ initialType }: LoginPageProps) {
           </p>
         </div>
 
-        <LoginTestimonialsPanel />
+        <div className="order-2 h-full lg:min-h-screen">
+          <LoginTestimonialsPanel />
+        </div>
       </div>
     </PageTransition>
   );
