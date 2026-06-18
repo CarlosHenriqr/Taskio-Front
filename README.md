@@ -111,7 +111,7 @@ No serviço **taskio-api** (Render) → **Environment**:
 
 | Key | Value |
 |-----|-------|
-| `FRONTEND_URL` | `https://taskio-1nr.pages.dev` |
+| `FRONTEND_URL` | `https://task-io-7d3.pages.dev` |
 
 Salve e aguarde o redeploy do backend.
 
