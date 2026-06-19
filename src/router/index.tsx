@@ -11,6 +11,7 @@ import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage';
 import { TermsPage } from '@/pages/public/TermsPage';
 import { PrivacyPage } from '@/pages/public/PrivacyPage';
 import { PlansPage } from '@/pages/public/PlansPage';
+import { CheckoutPage } from '@/pages/checkout/CheckoutPage';
 
 // Empresa
 import { EmpresaDashboardPage } from '@/pages/empresa/DashboardPage';
@@ -78,6 +79,7 @@ export const router = createBrowserRouter([
               { path: 'empresa/candidatos/:id', element: <EmpresaCandidateDetailPage /> },
               { path: 'empresa/notificacoes', element: <EmpresaNotificationsPage /> },
               { path: 'empresa/conta', element: <EmpresaAccountPage /> },
+              { path: 'empresa/assinar', element: <CheckoutPage /> },
             ],
           },
         ],
@@ -103,6 +105,7 @@ export const router = createBrowserRouter([
               { path: 'freelancer/curriculo', element: <Navigate to="/freelancer/perfil" replace /> },
               { path: 'freelancer/curriculo/editar', element: <Navigate to="/freelancer/perfil/editar" replace /> },
               { path: 'freelancer/conta', element: <FreelancerAccountPage /> },
+              { path: 'freelancer/assinar', element: <CheckoutPage /> },
             ],
           },
         ],

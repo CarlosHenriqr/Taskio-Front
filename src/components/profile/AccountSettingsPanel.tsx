@@ -10,7 +10,6 @@ import { isValidPhone, normalizePhoneDigits } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
 import { invalidateProfile } from '@/lib/queryInvalidation';
 import type { UserProfile } from '@/types/api';
-import { PlanUsageCard } from '@/components/plans/PlanUsageCard';
 
 type AccountSettingsPanelProps = {
   profile: UserProfile;
@@ -55,8 +54,6 @@ export function AccountSettingsPanel({ profile }: AccountSettingsPanelProps) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <PlanUsageCard />
-
       <Card className="overflow-hidden">
         <div className="border-b border-border/70 bg-surface-muted/30 px-6 py-4">
           <div className="flex items-center gap-3">

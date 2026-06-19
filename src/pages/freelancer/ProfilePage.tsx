@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, Save, ArrowLeft, User, Settings } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, User, Settings, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { Btn, Card, Field, TextArea, TextInput } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { AccountSettingsPanel } from '@/components/profile/AccountSettingsPanel';
+import { BillingPanel } from '@/components/profile/BillingPanel';
 import { ProfileSectionTabs } from '@/components/profile/ProfileSectionTabs';
 import { ExperienceSection } from '@/components/profile/ExperienceSection';
 import { TechStackPicker } from '@/components/profile/TechStackPicker';
@@ -27,7 +28,7 @@ import type { PortfolioItem, SkillLevel } from '@/types/api';
 
 const DEFAULT_SKILL_LEVEL: SkillLevel = 'BASICO';
 
-export type ProfileSection = 'professional' | 'account';
+export type ProfileSection = 'professional' | 'account' | 'billing';
 
 const PROFILE_SECTION_TABS = [
   {
@@ -42,10 +43,26 @@ const PROFILE_SECTION_TABS = [
     description: 'Foto, dados de acesso e senha',
     icon: Settings,
   },
+  {
+    value: 'billing' as const,
+    label: 'Plano e cobrança',
+    description: 'Assinatura, limites e upgrade',
+    icon: CreditCard,
+  },
 ] as const;
 
+const SECTION_BY_PARAM: Record<string, ProfileSection> = {
+  conta: 'account',
+  plano: 'billing',
+};
+
+const PARAM_BY_SECTION: Partial<Record<ProfileSection, string>> = {
+  account: 'conta',
+  billing: 'plano',
+};
+
 function resolveSection(searchParams: URLSearchParams): ProfileSection {
-  return searchParams.get('secao') === 'conta' ? 'account' : 'professional';
+  return SECTION_BY_PARAM[searchParams.get('secao') ?? ''] ?? 'professional';
 }
 
 export function FreelancerProfilePage() {
@@ -92,11 +109,8 @@ export function FreelancerProfilePage() {
 
   const setProfileSection = (next: ProfileSection) => {
     setSection(next);
-    if (next === 'account') {
-      setSearchParams({ secao: 'conta' }, { replace: true });
-    } else {
-      setSearchParams({}, { replace: true });
-    }
+    const param = PARAM_BY_SECTION[next];
+    setSearchParams(param ? { secao: param } : {}, { replace: true });
   };
 
   const validateResumeField = (value: string) => {
@@ -202,11 +216,15 @@ export function FreelancerProfilePage() {
   const profile = profileQuery.data;
   const isProfessional = section === 'professional';
 
+  const sectionDescriptions: Record<ProfileSection, string> = {
+    professional: 'Monte um perfil técnico completo para matching e candidaturas.',
+    account: 'Gerencie identidade, contato e credenciais de acesso.',
+    billing: 'Acompanhe seu plano, limites de uso e faça upgrade.',
+  };
+
   usePageShell({
     title: 'Configurações',
-    description: isProfessional
-      ? 'Monte um perfil técnico completo para matching e candidaturas.'
-      : 'Gerencie identidade, contato e credenciais de acesso.',
+    description: sectionDescriptions[section],
     primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
     actionsRevision: `${section}:${profileQuery.isLoading}:${profileQuery.isError}:${saveMutation.isPending}`,
     actions:
@@ -257,7 +275,7 @@ export function FreelancerProfilePage() {
           options={PROFILE_SECTION_TABS}
         />
 
-        {isProfessional ? (
+        {section === 'professional' ? (
           <>
             <Card className="p-6">
               <h3 className="font-display font-semibold">Bio</h3>
@@ -355,6 +373,8 @@ export function FreelancerProfilePage() {
               onChange={() => invalidateProfile(queryClient)}
             />
           </>
+        ) : section === 'billing' ? (
+          <BillingPanel />
         ) : (
           <AccountSettingsPanel profile={profile!} />
         )}

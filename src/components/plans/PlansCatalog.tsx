@@ -1,24 +1,29 @@
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Building2, CheckCircle2, UserRound } from 'lucide-react';
-import { Card } from '@/components/taskio/ui';
-import { planFeatures } from '@/components/plans/UpgradePrompt';
+import { Btn, Card } from '@/components/taskio/ui';
+import { planFeatures } from '@/components/plans/planFeatures';
+import { resolvePlanSubscribeAction } from '@/components/plans/planSubscribe';
 import {
   FALLBACK_COMPANY_PLANS,
   FALLBACK_FREELANCER_PLANS,
   PlanPrice,
 } from '@/components/plans/planDisplay';
+import { useAuth } from '@/contexts/AuthContext';
 import { plansApi } from '@/lib/api/plans.api';
 import { queryKeys } from '@/lib/queryKeys';
-import type { PlanLimits, PublicPlan } from '@/types/api';
+import type { PlanAudience, PlanLimits, PublicPlan } from '@/types/api';
 
 function PlanCard({
   audience,
   plan,
   highlighted,
+  subscribeAction,
 }: {
-  audience: 'USER' | 'COMPANY';
+  audience: PlanAudience;
   plan: PublicPlan;
   highlighted?: boolean;
+  subscribeAction?: { href: string; label: string } | null;
 }) {
   const features = planFeatures(audience, plan.limits as PlanLimits);
 
@@ -44,6 +49,16 @@ function PlanCard({
           </li>
         ))}
       </ul>
+
+      {subscribeAction && (
+        <div className="mt-4 border-t border-border/60 pt-4">
+          <Link to={subscribeAction.href}>
+            <Btn size="sm" className="w-full">
+              {subscribeAction.label}
+            </Btn>
+          </Link>
+        </div>
+      )}
     </Card>
   );
 }
@@ -53,11 +68,21 @@ function PlanColumn({
   icon: Icon,
   audience,
   plans,
+  isAuthenticated,
+  accountType,
+  currentPlanCode,
+  upgradePlanCode,
+  planLoaded,
 }: {
   title: string;
   icon: typeof UserRound;
-  audience: 'USER' | 'COMPANY';
+  audience: PlanAudience;
   plans: PublicPlan[];
+  isAuthenticated: boolean;
+  accountType?: 'user' | 'company';
+  currentPlanCode?: string;
+  upgradePlanCode?: string | null;
+  planLoaded?: boolean;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -72,6 +97,13 @@ function PlanColumn({
             audience={audience}
             plan={plan}
             highlighted={index === plans.length - 1}
+            subscribeAction={resolvePlanSubscribeAction(plan, audience, {
+              isAuthenticated,
+              accountType,
+              currentPlanCode,
+              upgradePlanCode,
+              planLoaded,
+            })}
           />
         ))}
       </div>
@@ -80,9 +112,18 @@ function PlanColumn({
 }
 
 export function PlansCatalog() {
+  const { user, isAuthenticated } = useAuth();
+
   const plansQuery = useQuery({
     queryKey: queryKeys.plans.public('all'),
     queryFn: () => plansApi.list(),
+  });
+
+  const myPlanQuery = useQuery({
+    queryKey: queryKeys.plans.me(user?.id ?? ''),
+    queryFn: () => plansApi.me(),
+    enabled: isAuthenticated && !!user?.id,
+    retry: 1,
   });
 
   const freelancerPlans =
@@ -90,10 +131,32 @@ export function PlansCatalog() {
   const companyPlans =
     plansQuery.data?.find((g) => g.audience === 'COMPANY')?.plans ?? FALLBACK_COMPANY_PLANS;
 
+  const planLoaded = !isAuthenticated || myPlanQuery.isSuccess || myPlanQuery.isError;
+
   return (
     <div className="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-12">
-      <PlanColumn title="Freelancer" icon={UserRound} audience="USER" plans={freelancerPlans} />
-      <PlanColumn title="Empresa" icon={Building2} audience="COMPANY" plans={companyPlans} />
+      <PlanColumn
+        title="Freelancer"
+        icon={UserRound}
+        audience="USER"
+        plans={freelancerPlans}
+        isAuthenticated={isAuthenticated}
+        accountType={user?.type}
+        currentPlanCode={myPlanQuery.data?.plan.code}
+        upgradePlanCode={myPlanQuery.data?.upgradePlanCode}
+        planLoaded={planLoaded}
+      />
+      <PlanColumn
+        title="Empresa"
+        icon={Building2}
+        audience="COMPANY"
+        plans={companyPlans}
+        isAuthenticated={isAuthenticated}
+        accountType={user?.type}
+        currentPlanCode={myPlanQuery.data?.plan.code}
+        upgradePlanCode={myPlanQuery.data?.upgradePlanCode}
+        planLoaded={planLoaded}
+      />
     </div>
   );
 }

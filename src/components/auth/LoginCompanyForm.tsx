@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Btn, Field, TextInput } from '@/components/taskio/ui';
@@ -13,6 +13,7 @@ type LoginCompanyFormProps = {
 
 export function LoginCompanyForm({ 'aria-hidden': ariaHidden }: LoginCompanyFormProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, isLoading } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +31,12 @@ export function LoginCompanyForm({ 'aria-hidden': ariaHidden }: LoginCompanyForm
         { email: identifier.trim(), password, type: 'company' },
         rememberMe,
       );
-      navigate(path);
+      const redirectTo = searchParams.get('redirect');
+      navigate(
+        redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+          ? redirectTo
+          : path,
+      );
       toast.success('Login realizado com sucesso!');
     } catch (err) {
       const { message, fields } = mapApiErrors(err);

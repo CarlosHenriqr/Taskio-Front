@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Crown, Sparkles, TrendingUp } from 'lucide-react';
-import { toast } from 'sonner';
 import { Badge, Btn, Card } from '@/components/taskio/ui';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { UpgradePrompt } from '@/components/plans/UpgradePrompt';
+import { getSubscribeCTALabel } from '@/components/plans/planFeatures';
+import { UPGRADE_ACCOUNT_PATH, inferUpgradePlanCode } from '@/components/plans/planSubscribe';
+import {
+  FALLBACK_COMPANY_PLANS,
+  FALLBACK_FREELANCER_PLANS,
+} from '@/components/plans/planDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { plansApi } from '@/lib/api/plans.api';
-import { mapApiErrors } from '@/lib/utils';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PlanMeResponse, PlanUsageMetric } from '@/types/api';
 
@@ -67,8 +70,6 @@ type PlanUsageCardProps = {
 
 export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.me(user!.id),
@@ -76,14 +77,21 @@ export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
     enabled: !!user?.id && !dataProp,
   });
 
-  const upgradeMutation = useMutation({
-    mutationFn: () => plansApi.mockUpgrade(),
-    onSuccess: async (updated) => {
-      await queryClient.setQueryData(queryKeys.plans.me(user!.id), updated);
-      toast.success(`Plano atualizado para ${updated.plan.name} (simulação).`);
-      setUpgradeOpen(false);
+  const data = dataProp ?? planQuery.data;
+  const effectiveUpgradeCode = data
+    ? data.upgradePlanCode ?? inferUpgradePlanCode(data.plan.code)
+    : null;
+  const canUpgrade = !!effectiveUpgradeCode;
+  const audience = data?.audience;
+
+  const publicPlansQuery = useQuery({
+    queryKey: queryKeys.plans.public(audience ?? 'all'),
+    queryFn: async () => {
+      if (!audience) return [];
+      const groups = await plansApi.list(audience);
+      return groups[0]?.plans ?? [];
     },
-    onError: (err) => toast.error(mapApiErrors(err).message),
+    enabled: !!audience && canUpgrade,
   });
 
   if (!dataProp && planQuery.isLoading) {
@@ -94,77 +102,66 @@ export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
     return compact ? null : <ErrorState onRetry={() => planQuery.refetch()} />;
   }
 
-  const data = dataProp ?? planQuery.data;
   if (!data) return null;
 
-  const isPro = data.upgradePlanCode == null;
+  const isOnPaidPlan = !canUpgrade;
+  const checkoutPath =
+    data.audience === 'USER' ? UPGRADE_ACCOUNT_PATH.user : UPGRADE_ACCOUNT_PATH.company;
+
+  const fallbackPlans =
+    data.audience === 'USER' ? FALLBACK_FREELANCER_PLANS : FALLBACK_COMPANY_PLANS;
+  const targetPlan = effectiveUpgradeCode
+    ? publicPlansQuery.data?.find((p) => p.code === effectiveUpgradeCode) ??
+      fallbackPlans.find((p) => p.code === effectiveUpgradeCode)
+    : undefined;
+  const subscribeLabel = targetPlan
+    ? getSubscribeCTALabel(targetPlan.name)
+    : data.audience === 'USER'
+      ? 'Assinar Pro'
+      : 'Assinar Growth';
 
   return (
-    <>
-      <Card className="overflow-hidden">
-        <div className="border-b border-border/70 bg-surface-muted/30 px-6 py-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-                {isPro ? <Crown className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-display font-semibold">Seu plano</h3>
-                  <Badge tone={isPro ? 'primary' : 'outline'}>{data.plan.name}</Badge>
-                </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">{data.plan.description}</p>
-              </div>
+    <Card className="overflow-hidden">
+      <div className="border-b border-border/70 bg-surface-muted/30 px-6 py-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+              {isOnPaidPlan ? <Crown className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
             </div>
-            <div className="text-right">
-              <p className="font-display text-lg font-semibold tracking-tight">{data.plan.priceLabel}</p>
-              {data.audience === 'USER' && data.plan.limits.profileBoostWeight > 0 && (
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  +{data.plan.limits.profileBoostWeight}% no matching
-                </p>
-              )}
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-display font-semibold">Seu plano</h3>
+                <Badge tone={isOnPaidPlan ? 'primary' : 'outline'}>{data.plan.name}</Badge>
+              </div>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Gerencie sua assinatura e limites de uso.
+              </p>
             </div>
           </div>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <p className="font-display text-lg font-semibold tracking-tight">{data.plan.priceLabel}</p>
+            {data.audience === 'USER' && data.plan.limits.profileBoostWeight > 0 && (
+              <p className="text-xs text-muted-foreground">
+                +{data.plan.limits.profileBoostWeight}% no matching
+              </p>
+            )}
+            {canUpgrade && (
+              <Link to={checkoutPath}>
+                <Btn size="sm">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  {subscribeLabel}
+                </Btn>
+              </Link>
+            )}
+          </div>
         </div>
+      </div>
 
-        <div className="space-y-4 p-6">
-          {data.usage.map((metric) => (
-            <UsageRow key={metric.key} metric={metric} />
-          ))}
-
-          {data.upgradePlanCode && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-              <Btn size="sm" onClick={() => setUpgradeOpen(true)}>
-                <TrendingUp className="h-3.5 w-3.5" />
-                Ver upgrade
-              </Btn>
-              <Btn
-                size="sm"
-                variant="outline"
-                onClick={() => upgradeMutation.mutate()}
-                disabled={upgradeMutation.isPending}
-              >
-                {upgradeMutation.isPending ? 'Atualizando...' : 'Simular upgrade (TCC)'}
-              </Btn>
-              <span className="text-xs text-muted-foreground">
-                Sem cobrança — apenas demonstração.
-              </span>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {data.upgradePlanCode && (
-        <UpgradePrompt
-          open={upgradeOpen}
-          onClose={() => setUpgradeOpen(false)}
-          audience={data.audience}
-          currentPlan={data.plan}
-          upgradePlanCode={data.upgradePlanCode}
-          onMockUpgrade={() => upgradeMutation.mutate()}
-          isUpgrading={upgradeMutation.isPending}
-        />
-      )}
-    </>
+      <div className="space-y-4 p-6">
+        {data.usage.map((metric) => (
+          <UsageRow key={metric.key} metric={metric} />
+        ))}
+      </div>
+    </Card>
   );
 }
