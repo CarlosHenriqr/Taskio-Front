@@ -1,4 +1,4 @@
-import type { PlanAudience } from '@/types/api';
+import type { PlanAudience, PublicPlan } from '@/types/api';
 import { cn } from '@/lib/utils';
 
 /** Rótulo curto para plano pago (null = free/starter, sem badge). */
