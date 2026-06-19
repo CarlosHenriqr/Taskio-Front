@@ -41,7 +41,7 @@ export function FreelancerApplicationsPage() {
   usePageShell({
     title: 'Meus trabalhos',
     description: 'Acompanhe todas as suas candidaturas e contratos.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
   });
 
   return (
@@ -72,7 +72,7 @@ export function FreelancerApplicationsPage() {
             title="Nenhuma candidatura"
             description="Explore projetos e envie sua primeira proposta."
             action={
-              <Link to="/freelancer/vagas">
+              <Link to="/freelancer/projetos">
                 <span className="text-sm font-semibold text-primary hover:underline">
                   Buscar projetos
                 </span>

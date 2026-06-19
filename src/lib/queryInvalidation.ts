@@ -41,6 +41,7 @@ export async function invalidateApplications(queryClient: QueryClient): Promise<
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['my-applications'] }),
     invalidateCompanyApplications(queryClient),
+    queryClient.invalidateQueries({ queryKey: ['plans', 'me'] }),
   ]);
 }
 
@@ -53,6 +54,7 @@ export async function invalidateAfterJobPublish(queryClient: QueryClient): Promi
     invalidateCompanyJobs(queryClient),
     invalidatePublicJobs(queryClient),
     invalidateMatching(queryClient),
+    queryClient.invalidateQueries({ queryKey: ['plans', 'me'] }),
   ]);
 }
 
@@ -62,10 +64,10 @@ export async function invalidateNotifications(queryClient: QueryClient): Promise
   ]);
 }
 
-export async function invalidateAdminUsers(queryClient: QueryClient): Promise<void> {
-  await queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-}
-
-export async function invalidateAdminJobs(queryClient: QueryClient): Promise<void> {
-  await queryClient.invalidateQueries({ queryKey: queryKeys.admin.jobs });
+export async function invalidatePlans(queryClient: QueryClient, userId?: string): Promise<void> {
+  if (userId) {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.plans.me(userId) });
+  } else {
+    await queryClient.invalidateQueries({ queryKey: ['plans', 'me'] });
+  }
 }

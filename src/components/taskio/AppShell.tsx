@@ -7,6 +7,8 @@ import { NotificationDropdown } from './NotificationDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { notificationsApi } from '@/lib/api/notifications.api';
 import { profileApi } from '@/lib/api/profile.api';
+import { plansApi } from '@/lib/api/plans.api';
+import { getPaidPlanBadgeLabel, PlanTierBadge } from '@/components/plans/planDisplay';
 import { NOTIFICATION_POLL_MS, STALE_TIME } from '@/lib/queryConfig';
 import { queryKeys } from '@/lib/queryKeys';
 import { getInitials } from '@/lib/utils';
@@ -52,6 +54,21 @@ export function AppShell({
     enabled: shellEnabled,
   });
 
+  const { data: planMe } = useQuery({
+    queryKey: queryKeys.plans.me(user!.id),
+    queryFn: () => plansApi.me(),
+    staleTime: STALE_TIME.plans,
+    enabled: shellEnabled,
+    // Badge de plano não bloqueia o shell; carrega após o primeiro paint.
+    placeholderData: (prev) => prev,
+  });
+
+  const planBadgeLabel = planMe
+    ? getPaidPlanBadgeLabel(planMe.plan.code, planMe.audience)
+    : null;
+
+  const planTierBadge = <PlanTierBadge label={planBadgeLabel} />;
+
   const accountPath =
     user?.type === 'user'
       ? '/freelancer/perfil/editar?secao=conta'
@@ -89,7 +106,7 @@ export function AppShell({
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-surface/90 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <Logo subtitle={subtitle} />
+        <Logo subtitle={subtitle} tierBadge={planTierBadge} />
         <div className="flex items-center gap-2">
           {showNotifications && notificationsPath && (
             <NotificationDropdown allPath={notificationsPath} unreadCount={unreadCount} />
@@ -112,7 +129,7 @@ export function AppShell({
           }`}
         >
           <div className="flex items-center justify-between border-b border-sidebar-border px-5 py-5">
-            <Logo subtitle={subtitle} />
+            <Logo subtitle={subtitle} tierBadge={planTierBadge} />
             <button
               onClick={() => setOpen(false)}
               className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-sidebar-accent lg:hidden"
@@ -177,7 +194,10 @@ export function AppShell({
                 </div>
               )}
               <div className="flex-1 overflow-hidden text-sm">
-                <p className="truncate font-medium">{user?.name ?? 'Usuário'}</p>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <p className="truncate font-medium">{user?.name ?? 'Usuário'}</p>
+                  <PlanTierBadge label={planBadgeLabel} className="hidden sm:inline-flex" />
+                </div>
                 <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
               </div>
               {accountPath ? (

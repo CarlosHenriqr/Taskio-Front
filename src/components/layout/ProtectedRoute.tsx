@@ -1,14 +1,14 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import type { UserRole, UserType } from '@/types/api';
+import type { UserType } from '@/types/api';
 import { PageLoader } from '@/components/feedback/PageLoader';
+import { getDashboardPath } from '@/lib/nav';
 
 type ProtectedRouteProps = {
   allowedTypes?: UserType[];
-  allowedRoles?: UserRole[];
 };
 
-export function ProtectedRoute({ allowedTypes, allowedRoles }: ProtectedRouteProps) {
+export function ProtectedRoute({ allowedTypes }: ProtectedRouteProps) {
   const { isAuthenticated, user, isInitializing } = useAuth();
   const location = useLocation();
 
@@ -20,18 +20,8 @@ export function ProtectedRoute({ allowedTypes, allowedRoles }: ProtectedRoutePro
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
   if (allowedTypes && !allowedTypes.includes(user.type)) {
-    const fallback =
-      user.role === 'admin'
-        ? '/admin/dashboard'
-        : user.type === 'company'
-          ? '/empresa/dashboard'
-          : '/freelancer/dashboard';
-    return <Navigate to={fallback} replace />;
+    return <Navigate to={getDashboardPath(user.type)} replace />;
   }
 
   return <Outlet />;
@@ -41,13 +31,7 @@ export function GuestRoute() {
   const { isAuthenticated, user } = useAuth();
 
   if (isAuthenticated && user) {
-    const path =
-      user.role === 'admin'
-        ? '/admin/dashboard'
-        : user.type === 'company'
-          ? '/empresa/dashboard'
-          : '/freelancer/dashboard';
-    return <Navigate to={path} replace />;
+    return <Navigate to={getDashboardPath(user.type)} replace />;
   }
 
   return <Outlet />;

@@ -13,9 +13,9 @@ export function FreelancerRecommendedPage() {
   const { jobs, isLoading, isError, refetch } = useRecommendedJobs();
 
   usePageShell({
-    title: 'Vagas recomendadas',
+    title: 'Projetos recomendados',
     description: 'Projetos com maior compatibilidade com seu perfil técnico.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
   });
 
   return (
@@ -32,7 +32,7 @@ export function FreelancerRecommendedPage() {
           <EmptyState
             icon={Sparkles}
             title="Nenhuma recomendação"
-            description="Nenhuma vaga com compatibilidade ≥ 70%. Complete sua stack técnica ou ajuste seu perfil."
+            description="Nenhum projeto com compatibilidade ≥ 70%. Complete sua stack técnica ou ajuste seu perfil."
           />
         )}
         <div className="space-y-4">
@@ -40,10 +40,10 @@ export function FreelancerRecommendedPage() {
             <JobCard
               key={job.id}
               job={job}
-              detailPath={`/freelancer/vagas/${job.id}`}
+              detailPath={`/freelancer/projetos/${job.id}`}
               matchPercent={job.matchPercent}
               showApply
-              onApply={() => navigate(`/freelancer/vagas/${job.id}`)}
+              onApply={() => navigate(`/freelancer/projetos/${job.id}`)}
             />
           ))}
         </div>

@@ -199,7 +199,7 @@ export function EmpresaEditJobPage() {
               <div>
                 <p className="font-semibold text-primary">Atualização do projeto</p>
                 <p className="mt-0.5 text-muted-foreground">
-                  Alterações refletem imediatamente para freelancers que visualizam a vaga.
+                  Alterações refletem imediatamente para freelancers que visualizam o projeto.
                 </p>
               </div>
             </Card>
@@ -207,7 +207,7 @@ export function EmpresaEditJobPage() {
             <Card className="p-6">
               <h3 className="font-display font-semibold">Informações principais</h3>
               <div className="mt-4 grid gap-4">
-                <Field label="Título da vaga" error={errors.title}>
+                <Field label="Título do projeto" error={errors.title}>
                   <TextInput value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -270,7 +270,7 @@ export function EmpresaEditJobPage() {
             <Card className="p-6">
               <h3 className="font-display font-semibold">Descrição & requisitos</h3>
               <div className="mt-4 grid gap-4">
-                <Field label="Descrição da vaga" error={errors.description}>
+                <Field label="Descrição do projeto" error={errors.description}>
                   <TextArea rows={5} value={description} onChange={(e) => setDescription(e.target.value)} required />
                 </Field>
                 <Field label="Requisitos e diferenciais" error={errors.requirements}>

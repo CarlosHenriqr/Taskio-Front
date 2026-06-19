@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { AccountSettingsPanel } from '@/components/profile/AccountSettingsPanel';
+import { ProfileSectionTabs } from '@/components/profile/ProfileSectionTabs';
 import { ExperienceSection } from '@/components/profile/ExperienceSection';
 import { TechStackPicker } from '@/components/profile/TechStackPicker';
 import { profileApi } from '@/lib/api/profile.api';
@@ -27,6 +28,21 @@ import type { PortfolioItem, SkillLevel } from '@/types/api';
 const DEFAULT_SKILL_LEVEL: SkillLevel = 'BASICO';
 
 export type ProfileSection = 'professional' | 'account';
+
+const PROFILE_SECTION_TABS = [
+  {
+    value: 'professional' as const,
+    label: 'Perfil profissional',
+    description: 'Bio, stack, currículo e portfólio',
+    icon: User,
+  },
+  {
+    value: 'account' as const,
+    label: 'Conta e segurança',
+    description: 'Foto, dados de acesso e senha',
+    icon: Settings,
+  },
+] as const;
 
 function resolveSection(searchParams: URLSearchParams): ProfileSection {
   return searchParams.get('secao') === 'conta' ? 'account' : 'professional';
@@ -187,11 +203,11 @@ export function FreelancerProfilePage() {
   const isProfessional = section === 'professional';
 
   usePageShell({
-    title: isProfessional ? 'Editar perfil' : 'Conta e segurança',
+    title: 'Configurações',
     description: isProfessional
-      ? 'Atualize bio, stack, experiências e portfólio.'
-      : 'Gerencie foto, dados de acesso e senha.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+      ? 'Monte um perfil técnico completo para matching e candidaturas.'
+      : 'Gerencie identidade, contato e credenciais de acesso.',
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
     actionsRevision: `${section}:${profileQuery.isLoading}:${profileQuery.isError}:${saveMutation.isPending}`,
     actions:
       isProfessional && !profileQuery.isLoading && !profileQuery.isError ? (
@@ -235,30 +251,11 @@ export function FreelancerProfilePage() {
   return (
     <PageTransition>
       <div className="space-y-6">
-        <Field label="Tipo de configuração">
-          <div className="grid grid-cols-2 gap-2" role="tablist" aria-label="Tipo de configuração">
-            <Btn
-              type="button"
-              role="tab"
-              aria-selected={isProfessional}
-              variant={isProfessional ? 'primary' : 'secondary'}
-              className="w-full"
-              onClick={() => setProfileSection('professional')}
-            >
-              <User className="h-4 w-4" /> Perfil profissional
-            </Btn>
-            <Btn
-              type="button"
-              role="tab"
-              aria-selected={!isProfessional}
-              variant={!isProfessional ? 'primary' : 'secondary'}
-              className="w-full"
-              onClick={() => setProfileSection('account')}
-            >
-              <Settings className="h-4 w-4" /> Conta e segurança
-            </Btn>
-          </div>
-        </Field>
+        <ProfileSectionTabs
+          value={section}
+          onChange={setProfileSection}
+          options={PROFILE_SECTION_TABS}
+        />
 
         {isProfessional ? (
           <>

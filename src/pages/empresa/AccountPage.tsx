@@ -14,6 +14,7 @@ import { isValidPhone, normalizePhoneDigits } from '@/lib/profileValidation';
 import { mapApiErrors } from '@/lib/utils';
 import { invalidateProfile } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
+import { PlanUsageCard } from '@/components/plans/PlanUsageCard';
 
 export function EmpresaAccountPage() {
   const queryClient = useQueryClient();
@@ -102,6 +103,8 @@ export function EmpresaAccountPage() {
   return (
     <PageTransition>
         <div className="mx-auto max-w-2xl space-y-6">
+          <PlanUsageCard />
+
           <Card className="p-6">
             <h3 className="font-display font-semibold">Logo e identidade</h3>
             <div className="mt-4">

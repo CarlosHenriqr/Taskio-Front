@@ -6,7 +6,6 @@ import {
   Zap,
   GitBranch,
   BarChart3,
-  Lock,
   Users,
   CheckCircle2,
   ChevronDown,
@@ -19,15 +18,15 @@ import { PageTransition } from '@/components/layout/PageTransition';
 const FAQ_ITEMS = [
   {
     q: 'O que é a TASKIO?',
-    a: 'A TASKIO é uma plataforma que conecta empresas a profissionais de tecnologia verificados. Empresas publicam projetos com escopo e stack definidos; freelancers encontram vagas compatíveis e gerenciam candidaturas, entregas e avaliações em um único workspace.',
+    a: 'A TASKIO é uma plataforma que conecta empresas a profissionais de tecnologia verificados. Empresas publicam projetos com escopo e stack definidos; freelancers encontram projetos compatíveis e gerenciam candidaturas, entregas e avaliações em um único workspace.',
   },
   {
     q: 'Como funciona o matching de candidatos?',
-    a: 'O motor de compatibilidade cruza a stack exigida no projeto com o perfil técnico do freelancer — tecnologias, experiência e histórico. Quanto mais completo o perfil e a descrição da vaga, mais precisos são os percentuais de match exibidos no painel.',
+    a: 'O motor de compatibilidade cruza a stack exigida no projeto com o perfil técnico do freelancer — tecnologias, experiência e histórico. Quanto mais completo o perfil e a descrição do projeto, mais precisos são os percentuais de match exibidos no painel.',
   },
   {
     q: 'Preciso de contas separadas para empresa e freelancer?',
-    a: 'Sim. O login distingue tipo de conta (empresa ou freelancer) e cada perfil acessa um workspace próprio: publicação de vagas e triagem de candidatos para empresas; busca de vagas, candidaturas e portfólio para freelancers.',
+    a: 'Sim. O login distingue tipo de conta (empresa ou freelancer) e cada perfil acessa um workspace próprio: publicação de projetos e triagem de candidatos para empresas; busca de projetos, candidaturas e portfólio para freelancers.',
   },
   {
     q: 'Como os perfis são verificados?',
@@ -43,7 +42,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Quanto tempo leva para começar a usar?',
-    a: 'O cadastro leva poucos minutos. Empresas podem publicar a primeira vaga em menos de cinco minutos; freelancers que completam bio, telefone e stack costumam receber recomendações mais rápido — em média, o onboarding até a primeira interação relevante fica em torno de 48 horas.',
+    a: 'O cadastro leva poucos minutos. Empresas podem publicar o primeiro projeto em menos de cinco minutos; freelancers que completam bio, telefone e stack costumam receber recomendações mais rápido — em média, o onboarding até a primeira interação relevante fica em torno de 48 horas.',
   },
 ] as const;
 
@@ -75,8 +74,11 @@ export function LandingPage() {
                 <a href="#fluxo" className="link-underline transition-colors hover:text-foreground">
                   Como funciona
                 </a>
+                <Link to="/planos" className="link-underline transition-colors hover:text-foreground">
+                  Planos
+                </Link>
                 <a href="#garantias" className="link-underline transition-colors hover:text-foreground">
-                  Garantias
+                  Diferenciais
                 </a>
                 <a href="#faq" className="link-underline transition-colors hover:text-foreground">
                   FAQ
@@ -298,36 +300,38 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Garantias */}
+        {/* Diferenciais */}
         <section id="garantias" className="border-b">
           <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-            <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              Garantias do ecossistema
+            <Badge tone="outline">Diferenciais</Badge>
+            <h2 className="mt-4 font-display text-3xl font-bold tracking-tight sm:text-4xl">
+              O que a TASKIO entrega na prática
             </h2>
-            <p className="mt-3 max-w-xl text-muted-foreground leading-relaxed">
-              Protocolos integrados para mitigação de riscos em projetos de engenharia.
+            <p className="mt-3 max-w-2xl text-muted-foreground leading-relaxed">
+              Recursos do MVP pensados para conectar projetos de tecnologia a profissionais
+              compatíveis — da publicação do projeto à avaliação final.
             </p>
             <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  icon: ShieldCheck,
-                  t: 'Verificação de skills',
-                  d: 'Validação via GitHub, GitLab e provas práticas.',
-                },
-                {
                   icon: Zap,
-                  t: 'Onboarding rápido',
-                  d: 'Média de 48h até a primeira contratação.',
+                  t: 'Matching por stack',
+                  d: 'Cruzamos as tecnologias do projeto com a stack do freelancer e exibimos percentuais de compatibilidade nos painéis de empresa e freelancer.',
                 },
                 {
-                  icon: Lock,
-                  t: 'Histórico auditável',
-                  d: 'Registro de milestones, reviews e status para rastreabilidade do projeto.',
+                  icon: ShieldCheck,
+                  t: 'Perfis técnicos completos',
+                  d: 'Bio, experiência, portfólio e skills no mesmo lugar. Projetos publicados com escopo e stack definidos para triagem mais objetiva.',
+                },
+                {
+                  icon: GitBranch,
+                  t: 'Funil de candidaturas',
+                  d: 'Acompanhe cada etapa — pendente, em análise, aceito ou recusado — com workspaces separados para empresa e freelancer.',
                 },
                 {
                   icon: BarChart3,
-                  t: 'Suporte técnico',
-                  d: 'Equipe com background em engenharia de software.',
+                  t: 'Avaliações e histórico',
+                  d: 'Feedback estruturado ao concluir projetos e registro do que já foi feito, para apoiar a próxima contratação com mais contexto.',
                 },
               ].map((g) => (
                 <Card key={g.t} className="p-6 transition-colors duration-150 hover:bg-surface-muted/50">
@@ -383,7 +387,7 @@ export function LandingPage() {
                     Pronto para o próximo projeto?
                   </h2>
                   <p className="mt-3 max-w-xl text-muted-foreground leading-relaxed">
-                    Crie sua conta e publique sua primeira vaga em menos de 5 minutos.
+                    Crie sua conta e publique seu primeiro projeto em menos de 5 minutos.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3 lg:justify-end">
@@ -413,6 +417,9 @@ export function LandingPage() {
               <a href="#" className="link-underline transition-colors hover:text-foreground">
                 Status
               </a>
+              <Link to="/planos" className="link-underline transition-colors hover:text-foreground">
+                Planos
+              </Link>
               <Link to="/termos" className="link-underline transition-colors hover:text-foreground">
                 Termos
               </Link>

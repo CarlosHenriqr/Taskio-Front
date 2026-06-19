@@ -103,7 +103,7 @@ export function EmpresaProjectsPage() {
           <EmptyState
             icon={Briefcase}
             title="Nenhum projeto publicado"
-            description="Crie sua primeira vaga e receba candidatos compatíveis em minutos."
+            description="Crie seu primeiro projeto e receba candidatos compatíveis em minutos."
             action={
               <Link to="/empresa/publicar">
                 <Btn>Publicar projeto</Btn>

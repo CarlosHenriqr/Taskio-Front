@@ -17,7 +17,7 @@ const AUTH_COPY = {
   },
   company: {
     title: 'Escale sua equipe técnica',
-    subtitle: 'Publique vagas, receba candidatos compatíveis e gerencie entregas em um só lugar.',
+    subtitle: 'Publique projetos, receba candidatos compatíveis e gerencie entregas em um só lugar.',
     path: '/cadastro/empresa',
   },
 } as const;

@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Btn, Field, TextInput } from '@/components/taskio/ui';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSlowActionHint } from '@/hooks/useSlowActionHint';
 import { mapApiErrors } from '@/lib/utils';
 
 type LoginFreelancerFormProps = {
@@ -18,6 +19,7 @@ export function LoginFreelancerForm({ 'aria-hidden': ariaHidden }: LoginFreelanc
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
+  const loadingHint = useSlowActionHint(isLoading);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +90,7 @@ export function LoginFreelancerForm({ 'aria-hidden': ariaHidden }: LoginFreelanc
         <p className="text-sm text-destructive">{formError}</p>
       )}
       <Btn type="submit" className="w-full" size="lg" disabled={isLoading}>
-        {isLoading ? 'Entrando...' : 'Entrar'} <ArrowRight className="h-4 w-4" />
+        {isLoading ? loadingHint : 'Entrar'} <ArrowRight className="h-4 w-4" />
       </Btn>
     </form>
   );

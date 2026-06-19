@@ -90,7 +90,7 @@ export function JobPaymentFields({ values, errors, onChange }: JobPaymentFieldsP
       <div>
         <p className="text-sm font-medium text-foreground">Como você pretende pagar?</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          Freelancers veem esse valor na listagem e no detalhe da vaga.
+          Freelancers veem esse valor na listagem e no detalhe do projeto.
         </p>
         {errors.paymentType && (
           <p className="mt-2 text-xs text-destructive">{errors.paymentType}</p>

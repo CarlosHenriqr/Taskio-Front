@@ -28,10 +28,9 @@ export function PrivacyPage() {
         <p>Esta Política aplica-se ao tratamento de dados pessoais de:</p>
         <LegalList
           items={[
-            'freelancers (pessoas físicas) que criam perfil e se candidatam a vagas;',
-            'representantes de empresas que publicam vagas e gerenciam candidatos;',
-            'visitantes da landing page e páginas públicas;',
-            'administradores autorizados da plataforma.',
+            'freelancers (pessoas físicas) que criam perfil e se candidatam a projetos;',
+            'representantes de empresas que publicam projetos e gerenciam candidatos;',
+            'visitantes da landing page e páginas públicas.',
           ]}
         />
         <p>
@@ -57,10 +56,10 @@ export function PrivacyPage() {
             'itens de portfólio (título, URL, descrição, imagem opcional).',
           ]}
         />
-        <p><strong>Dados de vagas e candidaturas</strong></p>
+        <p><strong>Dados de projetos e candidaturas</strong></p>
         <LegalList
           items={[
-            'conteúdo de vagas publicadas (título, descrição, requisitos, prazos, tecnologias);',
+            'conteúdo de projetos publicados (título, descrição, requisitos, prazos, tecnologias);',
             'candidaturas (carta de apresentação, currículo vinculado, status, datas);',
             'percentuais de compatibilidade (matching) calculados com base em tecnologias.',
           ]}
@@ -71,7 +70,6 @@ export function PrivacyPage() {
             'notificações internas (tipo, conteúdo, data de leitura);',
             'avaliações (nota, comentário, partes envolvidas, data);',
             'registros de recuperação de senha (códigos com hash, tentativas, expiração);',
-            'logs de moderação administrativa e auditoria, quando aplicável;',
             'dados técnicos: endereço IP, data/hora de acesso, identificadores de dispositivo/navegador e registros de erro, para segurança e operação.',
           ]}
         />
@@ -87,8 +85,8 @@ export function PrivacyPage() {
         <LegalList
           items={[
             'cadastrar, autenticar e manter contas de usuários;',
-            'permitir publicação de vagas, candidaturas e gestão do processo seletivo;',
-            'calcular e exibir compatibilidade técnica entre perfis e vagas;',
+            'permitir publicação de projetos, candidaturas e gestão do processo seletivo;',
+            'calcular e exibir compatibilidade técnica entre perfis e projetos;',
             'enviar notificações sobre eventos relevantes (candidaturas, mudanças de status etc.);',
             'permitir avaliações mútuas após conclusão de vínculos;',
             'viabilizar recuperação de senha e suporte;',
@@ -103,7 +101,7 @@ export function PrivacyPage() {
         <p>O tratamento apoia-se, conforme o caso, nas seguintes bases legais:</p>
         <LegalList
           items={[
-            'execução de contrato ou procedimentos preliminares (art. 7º, V): cadastro, uso da plataforma, candidaturas e gestão de vagas;',
+            'execução de contrato ou procedimentos preliminares (art. 7º, V): cadastro, uso da plataforma, candidaturas e gestão de projetos;',
             'consentimento (art. 7º, I): aceite desta Política e dos Termos no cadastro; comunicações opcionais, quando houver;',
             'legítimo interesse (art. 7º, IX): segurança, prevenção a fraudes, melhoria do serviço e moderação, com balanceamento de direitos;',
             'cumprimento de obrigação legal ou regulatória (art. 7º, II): quando exigido por autoridade competente;',
@@ -160,7 +158,7 @@ export function PrivacyPage() {
           items={[
             'comunicação criptografada (HTTPS/TLS);',
             'hash de senhas e autenticação por tokens JWT com renovação controlada;',
-            'controle de acesso por tipo de conta (freelancer, empresa, admin);',
+            'controle de acesso por tipo de conta (freelancer ou empresa);',
             'validação de entrada, limitação de taxa (rate limit) em endpoints sensíveis;',
             'armazenamento de tokens de sessão no navegador (sessionStorage por padrão; localStorage apenas se o usuário marcar "Lembrar de mim") apenas no dispositivo do usuário.',
           ]}
@@ -220,7 +218,7 @@ export function PrivacyPage() {
 
       <LegalSection title="12. Decisões automatizadas e matching">
         <p>
-          A plataforma calcula percentuais de compatibilidade entre vagas e perfis com base em
+          A plataforma calcula percentuais de compatibilidade entre projetos e perfis com base em
           tecnologias obrigatórias e desejáveis. Esse processamento é{' '}
           <strong>auxiliar à triagem</strong> e não produz efeito jurídico exclusivamente
           automatizado sobre contratações: a decisão final cabe à empresa contratante.
@@ -230,16 +228,7 @@ export function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="13. Tratamento por administradores">
-        <p>
-          Usuários com perfil administrativo podem acessar listagens de usuários e vagas para
-          moderação, bloqueio de contas e remoção de conteúdos inadequados. Essas ações são
-          registradas quando aplicável e limitadas à finalidade de segurança e conformidade da
-          plataforma.
-        </p>
-      </LegalSection>
-
-      <LegalSection title="14. Responsabilidades dos usuários">
+      <LegalSection title="13. Responsabilidades dos usuários">
         <LegalList
           items={[
             'fornecer dados verdadeiros e mantê-los atualizados;',
@@ -251,7 +240,7 @@ export function PrivacyPage() {
         />
       </LegalSection>
 
-      <LegalSection title="15. Alterações desta Política">
+      <LegalSection title="14. Alterações desta Política">
         <p>
           Esta Política pode ser atualizada para refletir mudanças legais, regulatórias ou
           funcionais. A data da última versão consta no topo da página. Alterações relevantes
@@ -260,7 +249,7 @@ export function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="16. Relação com os Termos de Uso">
+      <LegalSection title="15. Relação com os Termos de Uso">
         <p>
           Esta Política complementa os{' '}
           <Link to="/termos" className="font-medium text-primary hover:underline">
@@ -271,7 +260,7 @@ export function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection title="17. Contato">
+      <LegalSection title="16. Contato">
         <p>
           <strong>Privacidade e LGPD:</strong>{' '}
           <a href={`mailto:${LEGAL.dpoEmail}`} className="font-medium text-primary hover:underline">

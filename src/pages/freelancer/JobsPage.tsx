@@ -239,9 +239,9 @@ export function FreelancerJobsPage() {
   const activeFilterCount = activeFilterChips.length;
 
   usePageShell({
-    title: 'Buscar vagas',
+    title: 'Buscar projetos',
     description: 'Encontre projetos compatíveis com seu perfil técnico.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
   });
 
   return (
@@ -297,8 +297,8 @@ export function FreelancerJobsPage() {
           <div className="flex flex-wrap items-center gap-2 border-t border-border/60 bg-muted/25 px-4 py-2.5">
             <span className="text-xs text-muted-foreground">
               {jobsQuery.isLoading
-                ? 'Carregando vagas...'
-                : `${filteredJobs.length} ${filteredJobs.length === 1 ? 'vaga' : 'vagas'}${
+                ? 'Carregando projetos...'
+                : `${filteredJobs.length} ${filteredJobs.length === 1 ? 'projeto' : 'projetos'}${
                     jobs.length !== filteredJobs.length ? ` de ${jobs.length}` : ''
                   }`}
             </span>
@@ -336,12 +336,12 @@ export function FreelancerJobsPage() {
                     size="sm"
                   />
                 </Field>
-                <Field label="Tipo na vaga">
+                <Field label="Tipo no projeto">
                   <PillFilter
                     value={techRoleFilter}
                     onChange={setTechRoleFilter}
                     options={TECH_ROLE_OPTIONS}
-                    ariaLabel="Filtrar por tipo de tecnologia na vaga"
+                    ariaLabel="Filtrar por tipo de tecnologia no projeto"
                     showCounts={false}
                     size="sm"
                   />
@@ -361,7 +361,7 @@ export function FreelancerJobsPage() {
                     value={sortBy}
                     onChange={setSortBy}
                     options={SORT_OPTIONS}
-                    ariaLabel="Ordenar listagem de vagas"
+                    ariaLabel="Ordenar listagem de projetos"
                     showCounts={false}
                     size="sm"
                   />
@@ -398,7 +398,7 @@ export function FreelancerJobsPage() {
                         checked={stackOnlyFilter}
                         onChange={(e) => setStackOnlyFilter(e.target.checked)}
                       />
-                      Só vagas com minha stack
+                      Só projetos com minha stack
                     </label>
                   </Field>
                 )}
@@ -418,14 +418,14 @@ export function FreelancerJobsPage() {
         {!jobsQuery.isLoading && jobs.length === 0 && (
           <EmptyState
             icon={Briefcase}
-            title="Nenhuma vaga encontrada"
+            title="Nenhum projeto encontrado"
             description="Tente outros termos de busca ou volte mais tarde."
           />
         )}
         {!jobsQuery.isLoading && jobs.length > 0 && filteredJobs.length === 0 && (
           <EmptyState
             icon={Briefcase}
-            title="Nenhuma vaga com esses filtros"
+            title="Nenhum projeto com esses filtros"
             description={
               hasActiveFilters
                 ? 'Ajuste os filtros de compatibilidade, tecnologia ou prazo.'
@@ -438,10 +438,10 @@ export function FreelancerJobsPage() {
             <JobCard
               key={job.id}
               job={job}
-              detailPath={`/freelancer/vagas/${job.id}`}
+              detailPath={`/freelancer/projetos/${job.id}`}
               matchPercent={profileQuery.data ? matchPercent : undefined}
               showApply
-              onApply={() => navigate(`/freelancer/vagas/${job.id}`)}
+              onApply={() => navigate(`/freelancer/projetos/${job.id}`)}
             />
           ))}
         </div>

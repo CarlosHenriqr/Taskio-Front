@@ -60,11 +60,11 @@ export function FreelancerJobDetailPage() {
   const job = jobQuery.data;
 
   usePageShell({
-    title: job?.title ?? 'Vaga',
+    title: job?.title ?? 'Projeto',
     description: job?.company?.name,
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
     actions: job ? (
-      <Link to="/freelancer/vagas">
+      <Link to="/freelancer/projetos">
         <Btn variant="secondary" size="sm">
           <ArrowLeft className="h-3.5 w-3.5" /> Voltar
         </Btn>
@@ -97,7 +97,7 @@ export function FreelancerJobDetailPage() {
               <JobPaymentBlock payment={job} className="mt-6" />
               <div className="mt-6">
                 <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Sobre a vaga
+                  Sobre o projeto
                 </h3>
                 <div className="mt-3">
                   <JobDescriptionView
@@ -154,7 +154,7 @@ export function FreelancerJobDetailPage() {
             )}
             {job.status !== 'OPEN' && (
               <Card className="p-6 text-sm text-muted-foreground">
-                Esta vaga não está aceitando candidaturas no momento.
+                Este projeto não está aceitando candidaturas no momento.
               </Card>
             )}
           </aside>

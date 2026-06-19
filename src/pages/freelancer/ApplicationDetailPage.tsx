@@ -76,11 +76,11 @@ function ApplicationStatusAlert({
     return (
       <StatusAlertCard icon={XCircle} title="Candidatura recusada" tone="danger">
         <p>
-          Desta vez não deu certo, mas continue explorando outras vagas compatíveis com seu
+          Desta vez não deu certo, mas continue explorando outros projetos compatíveis com seu
           perfil.
         </p>
-        <Link to="/freelancer/vagas" className="mt-3 inline-block font-semibold text-primary hover:underline">
-          Buscar outras vagas
+        <Link to="/freelancer/projetos" className="mt-3 inline-block font-semibold text-primary hover:underline">
+          Buscar outros projetos
         </Link>
       </StatusAlertCard>
     );
@@ -149,7 +149,7 @@ export function FreelancerApplicationDetailPage() {
   usePageShell({
     title: job?.title ?? 'Candidatura',
     description: company?.name,
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
     actions: application ? (
       <Link to="/freelancer/trabalhos">
         <Btn variant="secondary" size="sm">
@@ -205,7 +205,7 @@ export function FreelancerApplicationDetailPage() {
 
               <div className="mt-6">
                 <h3 className="font-display text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  Sobre a vaga
+                  Sobre o projeto
                 </h3>
                 <div className="mt-3">
                   <JobDescriptionView
@@ -217,10 +217,10 @@ export function FreelancerApplicationDetailPage() {
 
               {job?.id && (
                 <Link
-                  to={`/freelancer/vagas/${job.id}`}
+                  to={`/freelancer/projetos/${job.id}`}
                   className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" /> Ver página pública da vaga
+                  <ExternalLink className="h-3.5 w-3.5" /> Ver página pública do projeto
                 </Link>
               )}
             </ContentPanel>

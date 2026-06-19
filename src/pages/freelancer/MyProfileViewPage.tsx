@@ -39,7 +39,7 @@ export function MyProfileViewPage() {
       profileQuery.isFetching && !profileQuery.isLoading
         ? 'Atualizando perfil…'
         : 'Como empresas e o sistema de matching enxergam seu perfil.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
     actions: profileQuery.data ? (
       <Link to="/freelancer/perfil/editar">
         <Btn size="sm">
@@ -167,7 +167,7 @@ export function MyProfileViewPage() {
                   <Link to="/freelancer/perfil/editar" className="text-primary hover:underline">
                     Adicionar agora
                   </Link>{' '}
-                  para se candidatar a vagas.
+                  para se candidatar a projetos.
                 </p>
               )}
             </Card>

@@ -187,11 +187,11 @@ export function EmpresaDashboardPage() {
           <StatCard
             label="Em andamento"
             value={inProgress}
-            delta={openJobsCount > 0 ? `${openJobsCount} vagas abertas` : undefined}
+            delta={openJobsCount > 0 ? `${openJobsCount} projetos abertos` : undefined}
             deltaTone="neutral"
             icon={RefreshCw}
           />
-          <StatCard label="Vagas abertas" value={openJobsCount} deltaTone="neutral" icon={Star} />
+          <StatCard label="Projetos abertos" value={openJobsCount} deltaTone="neutral" icon={Star} />
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.6fr_1fr]">

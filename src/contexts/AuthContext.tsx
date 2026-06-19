@@ -13,6 +13,7 @@ import {
   clearAuthSession,
   getRefreshToken,
   getStoredUser,
+  isAccessTokenValid,
   migrateLegacyAuthStorage,
   refreshAccessToken,
 } from '@/lib/api/client';
@@ -37,7 +38,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(() => !!getStoredUser() && !!getRefreshToken());
+  const [isInitializing, setIsInitializing] = useState(() => {
+    const storedUser = getStoredUser();
+    const refreshToken = getRefreshToken();
+    if (!storedUser || !refreshToken) return false;
+    return !isAccessTokenValid();
+  });
 
   useEffect(() => {
     const onSessionExpired = () => {
@@ -57,6 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedUser = getStoredUser();
       const refreshToken = getRefreshToken();
       if (!storedUser || !refreshToken) {
+        setIsInitializing(false);
+        return;
+      }
+
+      if (isAccessTokenValid()) {
         setIsInitializing(false);
         return;
       }
@@ -84,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear();
       authApi.persistSession(data, rememberMe);
       setUser(data.user);
-      return getDashboardPath(data.user.type, data.user.role);
+      return getDashboardPath(data.user.type);
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear();
       authApi.persistSession(data, rememberMe);
       setUser(data.user);
-      return getDashboardPath(data.user.type, data.user.role);
+      return getDashboardPath(data.user.type);
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear();
       authApi.persistSession(data, rememberMe);
       setUser(data.user);
-      return getDashboardPath(data.user.type, data.user.role);
+      return getDashboardPath(data.user.type);
     } finally {
       setIsLoading(false);
     }

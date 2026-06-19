@@ -194,7 +194,7 @@ export function EmpresaCandidateDetailPage() {
               )}
               {!matchData.matchedTechnologies.length && matchData.matchPercent === 0 && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  Nenhuma tecnologia da vaga encontrada no perfil do candidato.
+                  Nenhuma tecnologia do projeto encontrada no perfil do candidato.
                 </p>
               )}
             </ContentPanel>
@@ -226,7 +226,7 @@ export function EmpresaCandidateDetailPage() {
               />
             )}
 
-            <ContentPanel title="Vaga">
+            <ContentPanel title="Projeto">
               <p className="font-medium">{job?.title}</p>
               <p className="mt-1 line-clamp-4 text-xs leading-relaxed text-muted-foreground">
                 {job?.description}

@@ -34,7 +34,7 @@ export function TermsPage() {
           items={[
             'A plataforma não é empregadora, agência de recrutamento tradicional nem parte contratual das relações entre empresa e freelancer.',
             'Contratos, pagamentos, entregas e obrigações comerciais entre as partes ocorrem fora ou além do escopo mínimo da plataforma, salvo quando funcionalidades específicas forem disponibilizadas e aceitas.',
-            'A plataforma oferece ferramentas de cadastro, publicação de vagas, candidaturas, matching por compatibilidade técnica, notificações, avaliações e moderação administrativa.',
+            'A plataforma oferece ferramentas de cadastro, publicação de projetos, candidaturas, matching por compatibilidade técnica, notificações e avaliações.',
           ]}
         />
       </LegalSection>
@@ -42,17 +42,13 @@ export function TermsPage() {
       <LegalSection title="3. Tipos de conta e responsabilidades">
         <p>
           <strong>Freelancer:</strong> pode configurar perfil profissional (bio, telefone, stack
-          técnica, experiências, portfólio e currículo), buscar vagas, candidatar-se, acompanhar
+          técnica, experiências, portfólio e currículo), buscar projetos, candidatar-se, acompanhar
           candidaturas, receber notificações e avaliar empresas após conclusão do vínculo.
         </p>
         <p>
-          <strong>Empresa:</strong> pode publicar e gerenciar vagas, analisar candidatos, alterar
+          <strong>Empresa:</strong> pode publicar e gerenciar projetos, analisar candidatos, alterar
           status de candidaturas, receber recomendações de compatibilidade e utilizar dashboards de
           acompanhamento.
-        </p>
-        <p>
-          <strong>Administrador:</strong> perfil interno com permissões de moderação, bloqueio de
-          contas e remoção de vagas inadequadas, conforme políticas de uso aceitável.
         </p>
         <p>Você é responsável por:</p>
         <LegalList
@@ -78,19 +74,19 @@ export function TermsPage() {
         />
       </LegalSection>
 
-      <LegalSection title="5. Publicação de vagas (empresas)">
-        <p>Apenas empresas autenticadas podem publicar vagas. Ao publicar, você declara que:</p>
+      <LegalSection title="5. Publicação de projetos (empresas)">
+        <p>Apenas empresas autenticadas podem publicar projetos. Ao publicar, você declara que:</p>
         <LegalList
           items={[
             'possui legitimidade para representar a organização;',
-            'as informações da vaga (título, descrição, requisitos, prazos e tecnologias) são verídicas e não enganosas;',
+            'as informações do projeto (título, descrição, requisitos, prazos e tecnologias) são verídicas e não enganosas;',
             'não publicará conteúdo ofensivo, discriminatório, ilegal ou que viole propriedade intelectual de terceiros.',
           ]}
         />
         <p>
-          Vagas podem ter os status aberta, pausada, encerrada ou cancelada. Vagas pausadas,
-          encerradas ou canceladas não aceitam novas candidaturas. A empresa responsável pela vaga
-          pode gerenciar candidatos vinculados a ela.
+          Projetos podem ter os status aberta, pausada, encerrada ou cancelada. Projetos pausados,
+          encerrados ou cancelados não aceitam novas candidaturas. A empresa responsável pelo projeto
+          pode gerenciar candidatos vinculados a ele.
         </p>
       </LegalSection>
 
@@ -99,8 +95,8 @@ export function TermsPage() {
           items={[
             'Apenas freelancers autenticados podem se candidatar.',
             'É necessário possuir currículo cadastrado no perfil para candidatar-se.',
-            'Não é permitida candidatura duplicada à mesma vaga.',
-            'Candidaturas não são permitidas em vagas pausadas, encerradas ou canceladas.',
+            'Não é permitida candidatura duplicada ao mesmo projeto.',
+            'Candidaturas não são permitidas em projetos pausados, encerrados ou cancelados.',
             'O freelancer pode cancelar candidaturas nos status pendente ou em análise.',
             'A carta de apresentação e demais dados enviados devem refletir informações autênticas do perfil profissional.',
           ]}
@@ -109,8 +105,8 @@ export function TermsPage() {
 
       <LegalSection title="7. Matching, recomendações e decisões">
         <p>
-          A plataforma calcula percentuais de compatibilidade com base nas tecnologias exigidas pela
-          vaga e na stack cadastrada no perfil do freelancer. Esses indicadores são{' '}
+          A plataforma calcula percentuais de compatibilidade com base nas tecnologias exigidas pelo
+          projeto e na stack cadastrada no perfil do freelancer. Esses indicadores são{' '}
           <strong>auxiliares</strong> e não substituem a avaliação humana da empresa contratante.
         </p>
         <p>
@@ -136,7 +132,7 @@ export function TermsPage() {
         <LegalList
           items={[
             'A conclusão do projeto exige confirmação mútua: empresa e freelancer devem confirmar a finalização enquanto o vínculo estiver em andamento.',
-            'O status concluído só é atingido quando ambas as partes confirmarem; somente então a vaga é encerrada e as avaliações são liberadas.',
+            'O status concluído só é atingido quando ambas as partes confirmarem; somente então o projeto é encerrado e as avaliações são liberadas.',
             'Empresa e freelancer podem avaliar um ao outro após a conclusão formal do vínculo, com notas de 1 a 5 e comentário opcional.',
             'Avaliações devem ser honestas, relacionadas à experiência real e livres de conteúdo ofensivo ou difamatório.',
             'A plataforma pode remover avaliações que violem estas regras ou a legislação aplicável.',
@@ -146,7 +142,7 @@ export function TermsPage() {
 
       <LegalSection title="10. Conteúdo do usuário e propriedade intelectual">
         <p>
-          Você mantém a titularidade do conteúdo que publica (perfis, vagas, portfólio, textos e
+          Você mantém a titularidade do conteúdo que publica (perfis, projetos, portfólio, textos e
           arquivos), concedendo à {LEGAL.platformName} licença não exclusiva, gratuita e limitada
           ao necessário para operar, exibir, indexar, recomendar e moderar o serviço.
         </p>
@@ -177,7 +173,7 @@ export function TermsPage() {
           items={[
             'O serviço é fornecido na modalidade “como está”, com esforços razoáveis de disponibilidade e segurança.',
             'Manutenções, atualizações e falhas de terceiros (hospedagem, internet, provedores) podem causar indisponibilidade temporária.',
-            'Na extensão permitida pela lei, a plataforma não responde por lucros cessantes, perdas indiretas ou decisões de contratação tomadas com base em informações de perfis e vagas.',
+            'Na extensão permitida pela lei, a plataforma não responde por lucros cessantes, perdas indiretas ou decisões de contratação tomadas com base em informações de perfis e projetos.',
             'Cada usuário é responsável por backups, versionamento e proteção de materiais trocados fora da plataforma.',
           ]}
         />

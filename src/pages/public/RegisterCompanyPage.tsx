@@ -7,7 +7,7 @@ export function RegisterCompanyPage() {
     <PageTransition>
       <AuthSplit
         title="Escale sua equipe técnica"
-        subtitle="Publique vagas, receba candidatos compatíveis e gerencie entregas em um só lugar."
+        subtitle="Publique projetos, receba candidatos compatíveis e gerencie entregas em um só lugar."
       >
         <RegisterCompanyForm />
       </AuthSplit>

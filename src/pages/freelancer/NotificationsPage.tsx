@@ -48,7 +48,7 @@ export function FreelancerNotificationsPage() {
   usePageShell({
     title: 'Notificações',
     description: 'Acompanhe atualizações das suas candidaturas.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
   });
 
   return (

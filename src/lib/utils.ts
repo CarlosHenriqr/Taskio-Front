@@ -113,6 +113,26 @@ export function mapApiErrors(err: unknown): { message: string; fields: Record<st
         fields: { ...fields, code: fields.code ?? 'Código inválido ou expirado.' },
       };
     }
+    if (err.code === 'PLAN_LIMIT_REACHED') {
+      const details = err.details as {
+        limit?: number;
+        current?: number;
+        metric?: string;
+      } | undefined;
+      const metricLabels: Record<string, string> = {
+        maxActiveJobs: 'projetos ativos',
+        maxApplicationsPerMonth: 'candidaturas neste mês',
+      };
+      const metricLabel = details?.metric ? metricLabels[details.metric] ?? 'uso do plano' : 'uso do plano';
+      const usage =
+        details?.current != null && details?.limit != null
+          ? ` (${details.current}/${details.limit})`
+          : '';
+      return {
+        message: `Limite do plano atingido para ${metricLabel}${usage}. Faça upgrade em Configurar conta para continuar.`,
+        fields,
+      };
+    }
     return { message: err.message, fields };
   }
   if (err instanceof Error && err.message) {

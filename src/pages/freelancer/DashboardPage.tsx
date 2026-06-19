@@ -62,7 +62,7 @@ export function FreelancerDashboardPage() {
   usePageShell({
     title: 'Dashboard',
     description: 'Acompanhe candidaturas, propostas e ganhos.',
-    primaryAction: { label: 'Ver vagas', to: '/freelancer/vagas' },
+    primaryAction: { label: 'Ver projetos', to: '/freelancer/projetos' },
     actions: (
       <Link to="/freelancer/perfil/editar">
         <Btn size="sm">
@@ -133,7 +133,7 @@ export function FreelancerDashboardPage() {
               </SectionCard>
 
               <SectionCard
-                title="Vagas recomendadas"
+                title="Projetos recomendados"
                 actionTo="/freelancer/recomendadas"
                 actionLabel="Ver todas"
               >
@@ -141,7 +141,7 @@ export function FreelancerDashboardPage() {
                   {recommendedJobs.slice(0, 3).map((p) => (
                     <ListItemCard
                       key={p.id}
-                      to={`/freelancer/vagas/${p.id}`}
+                      to={`/freelancer/projetos/${p.id}`}
                       title={p.title}
                       subtitle={p.company?.name ?? 'Empresa'}
                       badge={<Badge tone="success">{p.matchPercent}% compatível</Badge>}
@@ -149,7 +149,7 @@ export function FreelancerDashboardPage() {
                   ))}
                   {!recommendedJobs.length && (
                     <p className="text-sm text-muted-foreground">
-                      Nenhuma vaga com compatibilidade ≥ 70%. Complete sua stack técnica.
+                      Nenhum projeto com compatibilidade ≥ 70%. Complete sua stack técnica.
                     </p>
                   )}
                 </div>

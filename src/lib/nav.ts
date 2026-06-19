@@ -21,21 +21,14 @@ export const empresaNav: NavItem[] = [
 
 export const freelancerNav: NavItem[] = [
   { label: 'Dashboard', to: '/freelancer/dashboard', icon: LayoutDashboard },
-  { label: 'Buscar vagas', to: '/freelancer/vagas', icon: Search },
+  { label: 'Buscar projetos', to: '/freelancer/projetos', icon: Search },
   { label: 'Recomendadas', to: '/freelancer/recomendadas', icon: Sparkles },
   { label: 'Meus trabalhos', to: '/freelancer/trabalhos', icon: BriefcaseBusiness },
   { label: 'Notificações', to: '/freelancer/notificacoes', icon: Bell },
   { label: 'Meu perfil', to: '/freelancer/perfil', icon: FileUser },
 ];
 
-export const adminNav: NavItem[] = [
-  { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Usuários', to: '/admin/usuarios', icon: Users },
-  { label: 'Vagas', to: '/admin/vagas', icon: FolderKanban },
-];
-
-export function getDashboardPath(type: string, role?: string): string {
-  if (role === 'admin') return '/admin/dashboard';
+export function getDashboardPath(type: string): string {
   if (type === 'company') return '/empresa/dashboard';
   return '/freelancer/dashboard';
 }

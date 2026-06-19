@@ -40,7 +40,7 @@ export function getNotificationPath(
     case 'APPLICATION_COMPLETED':
       return applicationId ? `/freelancer/trabalhos/${applicationId}` : '/freelancer/trabalhos';
     case 'COMPANY_HIRING_INTEREST':
-      return jobId ? `/freelancer/vagas/${jobId}` : '/freelancer/vagas';
+      return jobId ? `/freelancer/projetos/${jobId}` : '/freelancer/projetos';
     default:
       return null;
   }

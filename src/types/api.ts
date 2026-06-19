@@ -1,5 +1,5 @@
 export type UserType = 'user' | 'company';
-export type UserRole = 'user' | 'company' | 'admin';
+export type UserRole = 'user' | 'company';
 
 export type AuthUser = {
   id: string;
@@ -26,6 +26,7 @@ export type ApiError = {
   message: string;
   code?: string;
   errors?: Record<string, string[]>;
+  details?: Record<string, unknown>;
 };
 
 export type JobStatus = 'OPEN' | 'PAUSED' | 'CLOSED' | 'CANCELLED';
@@ -218,11 +219,53 @@ export type MatchingCandidate = Application & {
   matchedTechnologies?: string[];
 };
 
-export type AdminUser = {
-  id: string;
+export type PlanAudience = 'USER' | 'COMPANY';
+
+export type PlanLimits = {
+  maxActiveJobs?: number | null;
+  maxApplicationsPerMonth?: number | null;
+  matchingCandidateLimit: number;
+  matchingJobLimit: number;
+  profileBoostWeight: number;
+};
+
+export type PlanUsageMetric = {
+  key: string;
+  label: string;
+  used: number;
+  limit: number | null;
+};
+
+export type PlanMeResponse = {
+  audience: PlanAudience;
+  plan: {
+    code: string;
+    name: string;
+    description: string;
+    priceLabel: string;
+    limits: PlanLimits;
+  };
+  usage: PlanUsageMetric[];
+  upgradePlanCode: string | null;
+};
+
+export type PublicPlan = {
+  code: string;
   name: string;
-  email: string;
-  isBlocked: boolean;
-  isActive: boolean;
-  createdAt: string;
+  description: string;
+  priceLabel: string;
+  limits: PlanLimits;
+};
+
+export type PublicPlansGroup = {
+  audience: PlanAudience;
+  plans: PublicPlan[];
+};
+
+export type PlanLimitDetails = {
+  upgradeAudience?: PlanAudience;
+  planCode?: string;
+  limit?: number;
+  current?: number;
+  metric?: string;
 };

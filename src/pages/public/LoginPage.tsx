@@ -7,6 +7,7 @@ import { LoginFreelancerForm } from '@/components/auth/LoginFreelancerForm';
 import { LoginCompanyForm } from '@/components/auth/LoginCompanyForm';
 import { Btn, Field } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
+import { warmApiServer } from '@/lib/api/warmup';
 
 export type LoginAccountType = 'user' | 'company';
 
@@ -30,6 +31,10 @@ export function LoginPage({ initialType }: LoginPageProps) {
   const [accountType, setAccountType] = useState<LoginAccountType>(
     () => initialType ?? resolveTypeFromPath(location.pathname),
   );
+
+  useEffect(() => {
+    warmApiServer();
+  }, []);
 
   useEffect(() => {
     setAccountType(initialType ?? resolveTypeFromPath(location.pathname));

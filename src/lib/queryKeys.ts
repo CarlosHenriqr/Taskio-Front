@@ -40,8 +40,8 @@ export const queryKeys = {
     summary: (userId: string) => ['reviews', userId, 'summary'] as const,
     received: (userId: string, page: number) => ['reviews', userId, 'received', page] as const,
   },
-  admin: {
-    users: (type: string) => ['admin', 'users', type] as const,
-    jobs: ['admin', 'jobs'] as const,
+  plans: {
+    me: (userId: string) => ['plans', 'me', userId] as const,
+    public: (audience?: string) => ['plans', 'public', audience ?? 'all'] as const,
   },
 };

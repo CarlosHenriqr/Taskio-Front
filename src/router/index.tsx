@@ -1,7 +1,7 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useParams } from 'react-router-dom';
 import { ProtectedRoute, GuestRoute } from '@/components/layout/ProtectedRoute';
 import { RootLayout } from '@/components/layout/RootLayout';
-import { AdminLayout, EmpresaLayout, FreelancerLayout } from '@/components/layout/WorkspaceLayout';
+import { EmpresaLayout, FreelancerLayout } from '@/components/layout/WorkspaceLayout';
 
 // Public
 import { LandingPage } from '@/pages/public/LandingPage';
@@ -10,6 +10,7 @@ import { RegisterPage } from '@/pages/public/RegisterPage';
 import { ForgotPasswordPage } from '@/pages/public/ForgotPasswordPage';
 import { TermsPage } from '@/pages/public/TermsPage';
 import { PrivacyPage } from '@/pages/public/PrivacyPage';
+import { PlansPage } from '@/pages/public/PlansPage';
 
 // Empresa
 import { EmpresaDashboardPage } from '@/pages/empresa/DashboardPage';
@@ -34,16 +35,17 @@ import { MyProfileViewPage } from '@/pages/freelancer/MyProfileViewPage';
 import { FreelancerAccountPage } from '@/pages/freelancer/AccountPage';
 import { EmpresaAccountPage } from '@/pages/empresa/AccountPage';
 
-// Admin
-import { AdminDashboardPage } from '@/pages/admin/DashboardPage';
-import { AdminUsersPage } from '@/pages/admin/UsersPage';
-import { AdminJobsPage } from '@/pages/admin/JobsPage';
+function FreelancerJobDetailRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={id ? `/freelancer/projetos/${id}` : '/freelancer/projetos'} replace />;
+}
 
 export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
       { index: true, element: <LandingPage /> },
+      { path: 'planos', element: <PlansPage /> },
       { path: 'termos', element: <TermsPage /> },
       { path: 'privacidade', element: <PrivacyPage /> },
 
@@ -88,8 +90,10 @@ export const router = createBrowserRouter([
             element: <FreelancerLayout />,
             children: [
               { path: 'freelancer/dashboard', element: <FreelancerDashboardPage /> },
-              { path: 'freelancer/vagas', element: <FreelancerJobsPage /> },
-              { path: 'freelancer/vagas/:id', element: <FreelancerJobDetailPage /> },
+              { path: 'freelancer/projetos', element: <FreelancerJobsPage /> },
+              { path: 'freelancer/projetos/:id', element: <FreelancerJobDetailPage /> },
+              { path: 'freelancer/vagas', element: <Navigate to="/freelancer/projetos" replace /> },
+              { path: 'freelancer/vagas/:id', element: <FreelancerJobDetailRedirect /> },
               { path: 'freelancer/recomendadas', element: <FreelancerRecommendedPage /> },
               { path: 'freelancer/trabalhos', element: <FreelancerApplicationsPage /> },
               { path: 'freelancer/trabalhos/:id', element: <FreelancerApplicationDetailPage /> },
@@ -99,20 +103,6 @@ export const router = createBrowserRouter([
               { path: 'freelancer/curriculo', element: <Navigate to="/freelancer/perfil" replace /> },
               { path: 'freelancer/curriculo/editar', element: <Navigate to="/freelancer/perfil/editar" replace /> },
               { path: 'freelancer/conta', element: <FreelancerAccountPage /> },
-            ],
-          },
-        ],
-      },
-
-      {
-        element: <ProtectedRoute allowedRoles={['admin']} />,
-        children: [
-          {
-            element: <AdminLayout />,
-            children: [
-              { path: 'admin/dashboard', element: <AdminDashboardPage /> },
-              { path: 'admin/usuarios', element: <AdminUsersPage /> },
-              { path: 'admin/vagas', element: <AdminJobsPage /> },
             ],
           },
         ],

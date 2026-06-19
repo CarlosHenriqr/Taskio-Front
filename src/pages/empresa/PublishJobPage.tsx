@@ -62,7 +62,7 @@ export function EmpresaPublishPage() {
       }),
     onSuccess: async () => {
       await invalidateAfterJobPublish(queryClient);
-      toast.success('Vaga publicada com sucesso!');
+      toast.success('Projeto publicado com sucesso!');
       navigate('/empresa/projetos');
     },
     onError: (err) => {
@@ -161,7 +161,7 @@ export function EmpresaPublishPage() {
             <Card className="p-6">
               <h3 className="font-display font-semibold">Informações principais</h3>
               <div className="mt-4 grid gap-4">
-                <Field label="Título da vaga" error={errors.title}>
+                <Field label="Título do projeto" error={errors.title}>
                   <TextInput
                     placeholder="Ex: Engenheiro de Software Sênior (React/Node)"
                     value={title}
@@ -230,7 +230,7 @@ export function EmpresaPublishPage() {
             <Card className="p-6">
               <h3 className="font-display font-semibold">Descrição & requisitos</h3>
               <div className="mt-4 grid gap-4">
-                <Field label="Descrição da vaga" error={errors.description}>
+                <Field label="Descrição do projeto" error={errors.description}>
                   <TextArea
                     placeholder="Descreva contexto, desafios técnicos e expectativas..."
                     rows={5}
@@ -261,12 +261,12 @@ export function EmpresaPublishPage() {
             <Card className="p-6">
               <h3 className="font-display font-semibold">Pré-visualização</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Como freelancers verão sua vaga.
+                Como freelancers verão seu projeto.
               </p>
               <div className="mt-4 rounded-lg border bg-surface-muted p-4">
                 <p className="text-xs font-semibold text-primary">Rascunho</p>
                 <p className="mt-1 font-display text-base font-bold">
-                  {title || 'Título da vaga'}
+                  {title || 'Título do projeto'}
                 </p>
                 <p className="text-xs text-muted-foreground">Sua empresa</p>
                 {paymentType && (

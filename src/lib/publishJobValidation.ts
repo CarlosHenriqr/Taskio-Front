@@ -1,4 +1,5 @@
 import { ApiRequestError } from '@/lib/api/client';
+import { mapApiErrors } from '@/lib/utils';
 
 import { validateJobPaymentForm, type JobPaymentFormValues } from '@/lib/jobPayment';
 
@@ -87,7 +88,7 @@ const API_CODE_TO_FIELD: Record<string, string> = {
   INVALID_TECHNOLOGY_IDS: 'technologies',
 };
 
-/** Mapeia erros da API de criação de vaga para campos do formulário. */
+/** Mapeia erros da API de criação de projeto para campos do formulário. */
 export function mapPublishJobApiErrors(err: unknown): {
   message: string;
   fields: Record<string, string>;
@@ -96,11 +97,11 @@ export function mapPublishJobApiErrors(err: unknown): {
     if (err instanceof Error && err.message) {
       return { message: err.message, fields: {} };
     }
-    return { message: 'Não foi possível publicar a vaga. Tente novamente.', fields: {} };
+    return { message: 'Não foi possível publicar o projeto. Tente novamente.', fields: {} };
   }
 
   const fields: Record<string, string> = {};
-  let message = err.message || 'Não foi possível publicar a vaga. Tente novamente.';
+  let message = err.message || 'Não foi possível publicar o projeto. Tente novamente.';
 
   if (err.errors) {
     for (const [key, msgs] of Object.entries(err.errors)) {
@@ -127,7 +128,11 @@ export function mapPublishJobApiErrors(err: unknown): {
   }
 
   if (err.code === 'FORBIDDEN') {
-    message = 'Faça login como empresa para publicar vagas.';
+    message = 'Faça login como empresa para publicar projetos.';
+  }
+
+  if (err.code === 'PLAN_LIMIT_REACHED') {
+    return mapApiErrors(err);
   }
 
   return { message, fields };

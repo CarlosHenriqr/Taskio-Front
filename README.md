@@ -46,7 +46,7 @@ frontend/src/
 │   ├── public/       # Landing, login, cadastro, recuperar senha
 │   ├── empresa/      # Dashboard, projetos, candidatos, notificações
 │   ├── freelancer/   # Vagas, trabalhos, currículo, matching
-│   └── admin/        # Moderação
+│   └── plans/        # Planos e upgrade (TCC)
 ├── types/            # Tipos alinhados ao backend
 └── router/           # React Router
 ```
@@ -58,7 +58,6 @@ frontend/src/
 | Público | `/`, `/login`, `/cadastro/*` | Landing, auth, registro |
 | Empresa | `/empresa/*` | Vagas, candidatos, notificações |
 | Freelancer | `/freelancer/*` | Busca, candidaturas, perfil |
-| Admin | `/admin/*` | Usuários e vagas |
 
 ## Scripts
 

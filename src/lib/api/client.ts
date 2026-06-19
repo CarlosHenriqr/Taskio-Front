@@ -44,6 +44,28 @@ export function getStoredUser(): AuthUser | null {
   }
 }
 
+function decodeAccessTokenExp(token: string): number | null {
+  try {
+    const segment = token.split('.')[1];
+    if (!segment) return null;
+    const payload = JSON.parse(atob(segment.replace(/-/g, '+').replace(/_/g, '/'))) as {
+      exp?: number;
+    };
+    return typeof payload.exp === 'number' ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Access token ainda válido (com margem) — evita refresh desnecessário ao abrir o app. */
+export function isAccessTokenValid(bufferSeconds = 30): boolean {
+  const token = getAccessToken();
+  if (!token) return false;
+  const exp = decodeAccessTokenExp(token);
+  if (!exp) return false;
+  return exp * 1000 > Date.now() + bufferSeconds * 1000;
+}
+
 export type SetAuthSessionOptions = {
   rememberMe?: boolean;
 };
@@ -153,13 +175,21 @@ export class ApiRequestError extends Error {
   status: number;
   code?: string;
   errors?: Record<string, string[]>;
+  details?: Record<string, unknown>;
 
-  constructor(status: number, message: string, code?: string, errors?: Record<string, string[]>) {
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    errors?: Record<string, string[]>,
+    details?: Record<string, unknown>,
+  ) {
     super(message);
     this.name = 'ApiRequestError';
     this.status = status;
     this.code = code;
     this.errors = errors;
+    this.details = details;
   }
 }
 
@@ -219,6 +249,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       err.message ?? 'Erro na requisição.',
       err.code,
       err.errors,
+      err.details,
     );
   }
 

@@ -22,8 +22,8 @@ const SECTION_HEADERS = [
   'Responsabilidades',
   'O que você vai fazer',
   'O que voce vai fazer',
-  'Sobre a vaga',
   'Sobre o projeto',
+  'Sobre a vaga',
 ];
 
 function normalizeHeader(line: string): string {
