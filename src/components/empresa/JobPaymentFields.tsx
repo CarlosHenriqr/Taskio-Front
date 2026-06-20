@@ -38,7 +38,7 @@ function MoneyInput({
   placeholder,
   error,
   suffix,
-  step = 100,
+  step = 1,
 }: {
   label: string;
   value: string;

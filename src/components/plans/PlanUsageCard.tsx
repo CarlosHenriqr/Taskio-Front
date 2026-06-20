@@ -1,7 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Crown, Sparkles, TrendingUp } from 'lucide-react';
+import { Crown, Sparkles, TrendingUp, Ban } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge, Btn, Card } from '@/components/taskio/ui';
+import { ConfirmDialog } from '@/components/taskio/ConfirmDialog';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { getSubscribeCTALabel } from '@/components/plans/planFeatures';
@@ -12,6 +15,8 @@ import {
 } from '@/components/plans/planDisplay';
 import { useAuth } from '@/contexts/AuthContext';
 import { plansApi } from '@/lib/api/plans.api';
+import { invalidatePlans } from '@/lib/queryInvalidation';
+import { mapApiErrors } from '@/lib/utils';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PlanMeResponse, PlanUsageMetric } from '@/types/api';
 
@@ -66,15 +71,32 @@ function UsageRow({ metric }: { metric: PlanUsageMetric }) {
 type PlanUsageCardProps = {
   data?: PlanMeResponse;
   compact?: boolean;
+  onCancelled?: () => void;
 };
 
-export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
+export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsageCardProps) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.me(user!.id),
     queryFn: () => plansApi.me(),
     enabled: !!user?.id && !dataProp,
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => plansApi.cancel(),
+    onSuccess: async (updated) => {
+      if (user?.id) {
+        queryClient.setQueryData(queryKeys.plans.me(user.id), updated);
+        await invalidatePlans(queryClient, user.id);
+      }
+      setConfirmOpen(false);
+      toast.success('Assinatura cancelada. Você voltou ao plano grátis.');
+      onCancelled?.();
+    },
+    onError: (err) => toast.error(mapApiErrors(err).message),
   });
 
   const data = dataProp ?? planQuery.data;
@@ -121,6 +143,7 @@ export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
       : 'Assinar Growth';
 
   return (
+    <>
     <Card className="overflow-hidden">
       <div className="border-b border-border/70 bg-surface-muted/30 px-6 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -153,6 +176,17 @@ export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
                 </Btn>
               </Link>
             )}
+            {isOnPaidPlan && (
+              <Btn
+                variant="secondary"
+                size="sm"
+                onClick={() => setConfirmOpen(true)}
+                disabled={cancelMutation.isPending}
+              >
+                <Ban className="h-3.5 w-3.5" />
+                Cancelar assinatura
+              </Btn>
+            )}
           </div>
         </div>
       </div>
@@ -163,5 +197,24 @@ export function PlanUsageCard({ data: dataProp, compact }: PlanUsageCardProps) {
         ))}
       </div>
     </Card>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        tone="danger"
+        title="Cancelar assinatura?"
+        description={
+          <>
+            Você voltará ao plano grátis e perderá os limites ampliados do{' '}
+            <span className="font-medium text-foreground">{data.plan.name}</span>. Não há cobrança e
+            você pode assinar novamente quando quiser.
+          </>
+        }
+        confirmLabel="Cancelar assinatura"
+        cancelLabel="Manter plano"
+        loading={cancelMutation.isPending}
+        onConfirm={() => cancelMutation.mutate()}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </>
   );
 }

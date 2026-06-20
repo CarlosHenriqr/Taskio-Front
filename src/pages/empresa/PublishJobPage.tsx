@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Info, ArrowRight } from 'lucide-react';
@@ -36,6 +36,7 @@ export function EmpresaPublishPage() {
   const [budgetMax, setBudgetMax] = useState('');
   const [hourlyRate, setHourlyRate] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const isSubmittingRef = useRef(false);
 
   const techQuery = useQuery({
     queryKey: ['technologies'],
@@ -60,10 +61,10 @@ export function EmpresaPublishPage() {
         desirableTechnologyIds: desirableIds,
         ...toJobPaymentPayload({ paymentType, budgetMin, budgetMax, hourlyRate }),
       }),
-    onSuccess: async () => {
-      await invalidateAfterJobPublish(queryClient);
+    onSuccess: () => {
       toast.success('Projeto publicado com sucesso!');
       navigate('/empresa/projetos');
+      void invalidateAfterJobPublish(queryClient);
     },
     onError: (err) => {
       const { message, fields } = mapPublishJobApiErrors(err);
@@ -71,9 +72,13 @@ export function EmpresaPublishPage() {
       if (err instanceof ApiRequestError && err.code === 'SESSION_EXPIRED') return;
       toast.error(message);
     },
+    onSettled: () => {
+      isSubmittingRef.current = false;
+    },
   });
 
   const submitPublish = () => {
+    if (isSubmittingRef.current || createMutation.isPending) return;
     const fieldErrors = validatePublishJobForm({
       title,
       description,
@@ -92,6 +97,7 @@ export function EmpresaPublishPage() {
       toast.error('Revise os campos destacados antes de publicar.');
       return;
     }
+    isSubmittingRef.current = true;
     createMutation.mutate();
   };
 
@@ -122,6 +128,7 @@ export function EmpresaPublishPage() {
   usePageShell({
     title: 'Publicar projeto',
     description: 'Defina escopo e requisitos para receber candidatos compatíveis.',
+    actionsRevision: `${createMutation.isPending ? 'pending' : 'idle'}:${techQuery.isError ? 'err' : 'ok'}`,
     actions: (
       <>
         <Link to="/empresa/projetos">
@@ -146,7 +153,7 @@ export function EmpresaPublishPage() {
 
   return (
     <PageTransition>
-        <form id="publish-job-form" onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+        <form id="publish-job-form" noValidate onSubmit={handleSubmit} className="grid gap-5 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-5">
             <Card className="flex gap-3 border-primary/20 bg-primary/5 p-4 text-sm">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />

@@ -1,5 +1,9 @@
-import type { PlanAudience, PublicPlan } from '@/types/api';
+import { Link } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
+import type { PlanAudience, PlanLimits, PublicPlan } from '@/types/api';
 import { cn } from '@/lib/utils';
+import { Btn, Card } from '@/components/taskio/ui';
+import { planFeatures } from '@/components/plans/planFeatures';
 
 /** Rótulo curto para plano pago (null = free/starter, sem badge). */
 export function getPaidPlanBadgeLabel(
@@ -57,6 +61,55 @@ export function PlanPrice({ priceLabel }: { priceLabel: string }) {
   }
 
   return <span className="font-semibold text-primary">{priceLabel}</span>;
+}
+
+export function PlanCard({
+  audience,
+  plan,
+  highlighted,
+  subscribeAction,
+}: {
+  audience: PlanAudience;
+  plan: PublicPlan;
+  highlighted?: boolean;
+  subscribeAction?: { href: string; label: string } | null;
+}) {
+  const features = planFeatures(audience, plan.limits as PlanLimits);
+
+  return (
+    <Card
+      className={`flex h-full min-h-[22rem] flex-col p-6 ${
+        highlighted ? 'border-primary/40 ring-1 ring-primary/15' : ''
+      }`}
+    >
+      <div className="flex min-h-[4.5rem] items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="font-display text-xl font-semibold">{plan.name}</h4>
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{plan.description}</p>
+        </div>
+        <PlanPrice priceLabel={plan.priceLabel} />
+      </div>
+
+      <ul className="mt-6 flex flex-1 flex-col justify-start space-y-2.5 border-t border-border/60 pt-5">
+        {features.map((f) => (
+          <li key={f} className="flex items-start gap-2 text-sm leading-snug">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+
+      {subscribeAction && (
+        <div className="mt-4 border-t border-border/60 pt-4">
+          <Link to={subscribeAction.href}>
+            <Btn size="sm" className="w-full">
+              {subscribeAction.label}
+            </Btn>
+          </Link>
+        </div>
+      )}
+    </Card>
+  );
 }
 
 export const FALLBACK_FREELANCER_PLANS: PublicPlan[] = [

@@ -19,7 +19,7 @@ export function JobDescriptionView({
 
   return (
     <div className={className}>
-      {parsed.plain && parsed.sections.length === 0 && (
+      {parsed.plain && (
         <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
           {parsed.plain}
         </p>
@@ -34,7 +34,7 @@ export function JobDescriptionView({
       {parsed.sections.map((section, index) => (
         <section
           key={section.title}
-          className={`mt-5 pt-5 ${parsed.intro || index > 0 ? 'border-t border-border' : ''}`}
+          className={`mt-5 pt-5 ${parsed.intro || parsed.plain || index > 0 ? 'border-t border-border' : ''}`}
         >
           <h3 className="font-display text-base font-semibold text-foreground/90">
             {section.title}

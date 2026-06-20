@@ -14,4 +14,6 @@ export const plansApi = {
       method: 'POST',
       body: targetCode ? { targetCode } : {},
     }),
+
+  cancel: () => apiRequest<PlanMeResponse>('/plans/cancel', { method: 'POST' }),
 };
