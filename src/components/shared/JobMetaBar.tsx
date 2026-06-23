@@ -1,11 +1,13 @@
 import { Building2, Calendar, Clock, Wallet } from 'lucide-react';
 import { JobStatusBadge } from '@/components/shared/StatusBadge';
-import type { Job, JobStatus } from '@/types/api';
+import { ReviewRatingInline } from '@/components/shared/ReviewRatingInline';
+import type { Job, JobStatus, ReviewSummary } from '@/types/api';
 import { formatJobPayment } from '@/lib/jobPayment';
 import { formatRelativeDate } from '@/lib/utils';
 
 type JobMetaBarProps = {
   companyName?: string | null;
+  reviewSummary?: Pick<ReviewSummary, 'averageRating' | 'totalReviews'> | null;
   deadline?: string | null;
   expiresAt?: string | null;
   createdAt?: string | null;
@@ -25,6 +27,7 @@ function formatDate(date?: string | null) {
 
 export function JobMetaBar({
   companyName,
+  reviewSummary,
   deadline,
   expiresAt,
   createdAt,
@@ -48,6 +51,12 @@ export function JobMetaBar({
         <span className="inline-flex items-center gap-1.5">
           <Building2 className="h-3.5 w-3.5 shrink-0" />
           <span className="font-medium text-foreground/80">{companyName}</span>
+          {reviewSummary && (
+            <ReviewRatingInline
+              averageRating={reviewSummary.averageRating}
+              totalReviews={reviewSummary.totalReviews}
+            />
+          )}
         </span>
       )}
       {deadlineLabel && (

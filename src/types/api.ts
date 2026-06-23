@@ -77,6 +77,7 @@ export type Job = {
     id: string;
     name: string;
     avatarUrl?: string | null;
+    reviewSummary?: Pick<ReviewSummary, 'averageRating' | 'totalReviews'>;
   };
   _count?: { applications: number };
 };
@@ -167,6 +168,8 @@ export type UserProfile = {
   }>;
   experiences?: Experience[];
   portfolio?: PortfolioItem[];
+  reviewSummary?: ReviewSummary;
+  recentReviews?: Review[];
 };
 
 export type Experience = {

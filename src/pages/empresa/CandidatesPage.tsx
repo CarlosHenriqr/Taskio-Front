@@ -16,7 +16,6 @@ import { usePageShell } from '@/contexts/ShellContext';
 import { CardSkeleton } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
 import { ApplicationStatusBadge } from '@/components/shared/StatusBadge';
-import { MatchScoreBadge } from '@/components/shared/MatchScoreBadge';
 import { ApplicationActions } from '@/components/empresa/ApplicationActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCompanyApplications, fetchCompanyJobs } from '@/lib/companyJobs';
@@ -66,7 +65,7 @@ export function EmpresaCandidatesPage() {
     () =>
       [...allApplications]
         .filter((a) => !statusFilter || a.status === statusFilter)
-        .sort((a, b) => (b.matchPercent ?? 0) - (a.matchPercent ?? 0)),
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [allApplications, statusFilter],
   );
 
@@ -167,12 +166,7 @@ export function EmpresaCandidatesPage() {
                       ? `Stack: ${a.matchedTechnologies.join(', ')}`
                       : undefined
                   }
-                  badges={
-                    <>
-                      <MatchScoreBadge score={a.matchPercent} />
-                      <ApplicationStatusBadge status={a.status} />
-                    </>
-                  }
+                  badges={<ApplicationStatusBadge status={a.status} />}
                 />
               </Link>
               <ApplicationActions

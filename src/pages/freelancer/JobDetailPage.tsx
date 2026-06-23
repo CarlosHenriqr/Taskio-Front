@@ -106,6 +106,7 @@ export function FreelancerJobDetailPage() {
               <JobMetaBar
                 className="mt-3"
                 companyName={job.company?.name}
+                reviewSummary={job.company?.reviewSummary}
                 deadline={job.deadline}
                 expiresAt={job.expiresAt}
                 createdAt={job.createdAt}

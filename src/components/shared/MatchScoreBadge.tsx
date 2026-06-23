@@ -23,7 +23,7 @@ function resolveScore(score?: number | null, matchScore?: number | null): number
 
 export function MatchScoreBadge({ score, matchScore, className, suffix = 'match' }: MatchScoreBadgeProps) {
   const resolved = resolveScore(score, matchScore);
-  if (resolved === null) return null;
+  if (resolved === null || resolved <= 0) return null;
 
   const rounded = normalizeMatchPercent({ matchPercent: resolved });
   return (
@@ -35,7 +35,7 @@ export function MatchScoreBadge({ score, matchScore, className, suffix = 'match'
 
 export function MatchScoreBar({ score, matchScore, className = '' }: MatchScoreBadgeProps) {
   const resolved = resolveScore(score, matchScore);
-  if (resolved === null) return null;
+  if (resolved === null || resolved <= 0) return null;
 
   const rounded = normalizeMatchPercent({ matchPercent: resolved });
   const barColor =

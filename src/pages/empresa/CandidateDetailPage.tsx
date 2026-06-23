@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Mail, Phone, Star } from 'lucide-react';
 import { Btn } from '@/components/taskio/ui';
 import { ContentPanel, TechPill } from '@/components/shared/ContentCards';
 import { UserAvatar } from '@/components/shared/UserAvatar';
@@ -69,6 +69,7 @@ export function EmpresaCandidateDetailPage() {
   });
 
   const profile = profileQuery.data;
+  const reviewSummary = profile?.reviewSummary;
 
   const matchData = useMemo(() => {
     if (job?.technologies?.length && profile?.techStack?.length) {
@@ -112,6 +113,22 @@ export function EmpresaCandidateDetailPage() {
                     <MatchScoreBadge score={matchData.matchPercent} />
                   </div>
                   <p className="text-sm text-muted-foreground">{job?.title}</p>
+                  {reviewSummary && reviewSummary.totalReviews > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="flex text-warning">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${i < Math.round(reviewSummary.averageRating) ? 'fill-current' : 'opacity-30'}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        ({reviewSummary.totalReviews}{' '}
+                        {reviewSummary.totalReviews === 1 ? 'avaliação' : 'avaliações'})
+                      </span>
+                    </div>
+                  )}
                   <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
                     {application.user?.email && (
                       <span className="inline-flex items-center gap-1">
