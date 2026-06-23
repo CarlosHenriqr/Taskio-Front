@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, CheckCircle2, CircleCheck, ShieldCheck, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -7,7 +7,12 @@ import { Badge, Btn, Card } from '@/components/taskio/ui';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
-import { PlanPrice } from '@/components/plans/planDisplay';
+import {
+  BillingIntervalToggle,
+  billingIntervalFromQuery,
+  billingQueryFromInterval,
+} from '@/components/plans/BillingIntervalToggle';
+import { PlanPrice, planCheckoutTotalLabel } from '@/components/plans/planDisplay';
 import { planFeatures } from '@/components/plans/planFeatures';
 import { inferUpgradePlanCode } from '@/components/plans/planSubscribe';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +21,7 @@ import { plansApi } from '@/lib/api/plans.api';
 import { getDashboardPath } from '@/lib/nav';
 import { mapApiErrors } from '@/lib/utils';
 import { queryKeys } from '@/lib/queryKeys';
-import type { PlanAudience, PublicPlan } from '@/types/api';
+import type { BillingInterval, PlanAudience, PublicPlan } from '@/types/api';
 
 const BILLING_PATH: Record<'user' | 'company', string> = {
   user: '/freelancer/perfil/editar?secao=plano',
@@ -26,8 +31,14 @@ const BILLING_PATH: Record<'user' | 'company', string> = {
 export function CheckoutPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [succeededPlanName, setSucceededPlanName] = useState<string | null>(null);
+  const billingInterval = billingIntervalFromQuery(searchParams.get('billing'));
+
+  const setBillingInterval = (interval: BillingInterval) => {
+    setSearchParams({ billing: billingQueryFromInterval(interval) }, { replace: true });
+  };
 
   const accountType: 'user' | 'company' = user?.type === 'company' ? 'company' : 'user';
   const audience: PlanAudience = accountType === 'company' ? 'COMPANY' : 'USER';
@@ -60,7 +71,8 @@ export function CheckoutPage() {
   });
 
   const upgradeMutation = useMutation({
-    mutationFn: (targetCode: string) => plansApi.mockUpgrade(targetCode),
+    mutationFn: ({ targetCode, interval }: { targetCode: string; interval: BillingInterval }) =>
+      plansApi.mockUpgrade(targetCode, interval),
     onSuccess: async (updated) => {
       await queryClient.setQueryData(queryKeys.plans.me(user!.id), updated);
       setSucceededPlanName(updated.plan.name);
@@ -120,8 +132,14 @@ export function CheckoutPage() {
 
   const handleConfirm = () => {
     if (!termsAccepted || !targetPlan) return;
-    upgradeMutation.mutate(effectiveUpgradeCode);
+    upgradeMutation.mutate({ targetCode: effectiveUpgradeCode, interval: billingInterval });
   };
+
+  const renewalDate = (() => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1);
+    return date.toLocaleDateString('pt-BR');
+  })();
 
   return (
     <PageTransition>
@@ -139,6 +157,9 @@ export function CheckoutPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Confira o que muda com o novo plano e confirme para ativar.
           </p>
+          <div className="mt-4">
+            <BillingIntervalToggle value={billingInterval} onChange={setBillingInterval} />
+          </div>
         </div>
 
         {!targetPlan ? (
@@ -156,6 +177,8 @@ export function CheckoutPage() {
             />
             <OrderSummary
               targetPlan={targetPlan}
+              billingInterval={billingInterval}
+              renewalDate={renewalDate}
               termsAccepted={termsAccepted}
               onTermsChange={setTermsAccepted}
               onConfirm={handleConfirm}
@@ -230,17 +253,24 @@ function ProductColumn({
 
 function OrderSummary({
   targetPlan,
+  billingInterval,
+  renewalDate,
   termsAccepted,
   onTermsChange,
   onConfirm,
   isUpgrading,
 }: {
   targetPlan: PublicPlan;
+  billingInterval: BillingInterval;
+  renewalDate: string;
   termsAccepted: boolean;
   onTermsChange: (accepted: boolean) => void;
   onConfirm: () => void;
   isUpgrading: boolean;
 }) {
+  const isAnnual = billingInterval === 'YEARLY';
+  const totalLabel = planCheckoutTotalLabel(targetPlan.pricing, billingInterval);
+
   return (
     <Card className="overflow-hidden lg:sticky lg:top-6">
       <div className="border-b border-border/70 px-6 py-4">
@@ -251,20 +281,26 @@ function OrderSummary({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="font-semibold">{targetPlan.name}</p>
-            <p className="mt-0.5 text-sm text-muted-foreground">Cobrança mensal recorrente</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {isAnnual ? `Cobrança anual · renova em ${renewalDate}` : 'Cobrança mensal recorrente'}
+            </p>
           </div>
-          <PlanPrice priceLabel={targetPlan.priceLabel} />
+          <PlanPrice
+            priceLabel={targetPlan.priceLabel}
+            pricing={targetPlan.pricing}
+            billingInterval={billingInterval}
+          />
         </div>
 
         <div className="flex items-center justify-between border-t border-border/60 pt-4 text-sm">
           <span className="font-medium">Total hoje</span>
-          <span className="font-display text-lg font-semibold tracking-tight">
-            {targetPlan.priceLabel}
-          </span>
+          <span className="font-display text-lg font-semibold tracking-tight">{totalLabel}</span>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Cobrança mensal recorrente. Cancele quando quiser.
+          {isAnnual
+            ? 'Cobrança anual. Cancele quando quiser.'
+            : 'Cobrança mensal recorrente. Cancele quando quiser.'}
         </p>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3">

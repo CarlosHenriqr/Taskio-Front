@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
-import type { PlanAudience, PlanLimits, PublicPlan } from '@/types/api';
+import type { BillingInterval, PlanAudience, PlanLimits, PlanPricing, PublicPlan } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { Btn, Card } from '@/components/taskio/ui';
 import { planFeatures } from '@/components/plans/planFeatures';
@@ -37,12 +37,36 @@ export function PlanTierBadge({
   );
 }
 
-export function PlanPrice({ priceLabel }: { priceLabel: string }) {
+export function PlanPrice({
+  priceLabel,
+  pricing,
+  billingInterval = 'MONTHLY',
+}: {
+  priceLabel: string;
+  pricing?: PlanPricing;
+  billingInterval?: BillingInterval;
+}) {
   const isFree = /^grátis$/i.test(priceLabel.trim());
 
   if (isFree) {
     return (
       <span className="font-display text-2xl font-bold tracking-tight text-primary">Grátis</span>
+    );
+  }
+
+  if (billingInterval === 'YEARLY' && pricing?.annual) {
+    return (
+      <div className="text-right">
+        <div>
+          <span className="font-display text-2xl font-bold tracking-tight text-primary">
+            {pricing.annual.monthlyEquivalentLabel}
+          </span>
+          <span className="ml-0.5 text-sm font-medium text-muted-foreground">/mês</span>
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          cobrado anualmente · {pricing.annual.priceLabel}
+        </p>
+      </div>
     );
   }
 
@@ -63,16 +87,28 @@ export function PlanPrice({ priceLabel }: { priceLabel: string }) {
   return <span className="font-semibold text-primary">{priceLabel}</span>;
 }
 
+export function planCheckoutTotalLabel(
+  pricing: PlanPricing,
+  billingInterval: BillingInterval,
+): string {
+  if (billingInterval === 'YEARLY' && pricing.annual) {
+    return pricing.annual.priceLabel;
+  }
+  return pricing.monthly.priceLabel;
+}
+
 export function PlanCard({
   audience,
   plan,
   highlighted,
   subscribeAction,
+  billingInterval = 'MONTHLY',
 }: {
   audience: PlanAudience;
   plan: PublicPlan;
   highlighted?: boolean;
   subscribeAction?: { href: string; label: string } | null;
+  billingInterval?: BillingInterval;
 }) {
   const features = planFeatures(audience, plan.limits as PlanLimits);
 
@@ -87,7 +123,11 @@ export function PlanCard({
           <h4 className="font-display text-xl font-semibold">{plan.name}</h4>
           <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{plan.description}</p>
         </div>
-        <PlanPrice priceLabel={plan.priceLabel} />
+        <PlanPrice
+          priceLabel={plan.priceLabel}
+          pricing={plan.pricing}
+          billingInterval={billingInterval}
+        />
       </div>
 
       <ul className="mt-6 flex flex-1 flex-col justify-start space-y-2.5 border-t border-border/60 pt-5">
@@ -118,6 +158,7 @@ export const FALLBACK_FREELANCER_PLANS: PublicPlan[] = [
     name: 'Free',
     description: 'Perfil completo e candidaturas essenciais.',
     priceLabel: 'Grátis',
+    pricing: { monthly: { priceLabel: 'Grátis' } },
     limits: {
       maxApplicationsPerMonth: 15,
       matchingJobLimit: 10,
@@ -130,6 +171,14 @@ export const FALLBACK_FREELANCER_PLANS: PublicPlan[] = [
     name: 'Pro',
     description: 'Mais candidaturas e destaque leve no matching.',
     priceLabel: 'R$ 39/mês',
+    pricing: {
+      monthly: { priceLabel: 'R$ 39/mês' },
+      annual: {
+        priceLabel: 'R$ 390/ano',
+        monthlyEquivalentLabel: 'R$ 32,50',
+        savingsLabel: 'Economize 17%',
+      },
+    },
     limits: {
       maxApplicationsPerMonth: 50,
       matchingJobLimit: 30,
@@ -145,6 +194,7 @@ export const FALLBACK_COMPANY_PLANS: PublicPlan[] = [
     name: 'Starter',
     description: 'Publique projetos e gerencie candidatos.',
     priceLabel: 'Grátis',
+    pricing: { monthly: { priceLabel: 'Grátis' } },
     limits: {
       maxActiveJobs: 2,
       matchingCandidateLimit: 5,
@@ -157,6 +207,14 @@ export const FALLBACK_COMPANY_PLANS: PublicPlan[] = [
     name: 'Growth',
     description: 'Mais projetos ativos e matching ampliado.',
     priceLabel: 'R$ 79/mês',
+    pricing: {
+      monthly: { priceLabel: 'R$ 79/mês' },
+      annual: {
+        priceLabel: 'R$ 790/ano',
+        monthlyEquivalentLabel: 'R$ 65,83',
+        savingsLabel: 'Economize 17%',
+      },
+    },
     limits: {
       maxActiveJobs: 10,
       matchingCandidateLimit: 20,

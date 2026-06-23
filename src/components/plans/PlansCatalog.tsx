@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Building2, UserRound } from 'lucide-react';
+import { BillingIntervalToggle } from '@/components/plans/BillingIntervalToggle';
 import { resolvePlanSubscribeAction } from '@/components/plans/planSubscribe';
 import {
   FALLBACK_COMPANY_PLANS,
@@ -9,7 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { plansApi } from '@/lib/api/plans.api';
 import { queryKeys } from '@/lib/queryKeys';
-import type { PlanAudience, PublicPlan } from '@/types/api';
+import type { BillingInterval, PlanAudience, PublicPlan } from '@/types/api';
 
 function PlanColumn({
   title,
@@ -21,6 +23,7 @@ function PlanColumn({
   currentPlanCode,
   upgradePlanCode,
   planLoaded,
+  billingInterval,
 }: {
   title: string;
   icon: typeof UserRound;
@@ -31,6 +34,7 @@ function PlanColumn({
   currentPlanCode?: string;
   upgradePlanCode?: string | null;
   planLoaded?: boolean;
+  billingInterval: BillingInterval;
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -51,7 +55,9 @@ function PlanColumn({
               currentPlanCode,
               upgradePlanCode,
               planLoaded,
+              billingInterval,
             })}
+            billingInterval={billingInterval}
           />
         ))}
       </div>
@@ -61,6 +67,7 @@ function PlanColumn({
 
 export function PlansCatalog() {
   const { user, isAuthenticated } = useAuth();
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('MONTHLY');
 
   const plansQuery = useQuery({
     queryKey: queryKeys.plans.public('all'),
@@ -82,7 +89,11 @@ export function PlansCatalog() {
   const planLoaded = !isAuthenticated || myPlanQuery.isSuccess || myPlanQuery.isError;
 
   return (
-    <div className="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-12">
+    <div className="space-y-8">
+      <div className="flex justify-center">
+        <BillingIntervalToggle value={billingInterval} onChange={setBillingInterval} />
+      </div>
+      <div className="grid items-stretch gap-10 lg:grid-cols-2 lg:gap-12">
       <PlanColumn
         title="Freelancer"
         icon={UserRound}
@@ -93,6 +104,7 @@ export function PlansCatalog() {
         currentPlanCode={myPlanQuery.data?.plan.code}
         upgradePlanCode={myPlanQuery.data?.upgradePlanCode}
         planLoaded={planLoaded}
+        billingInterval={billingInterval}
       />
       <PlanColumn
         title="Empresa"
@@ -104,7 +116,9 @@ export function PlansCatalog() {
         currentPlanCode={myPlanQuery.data?.plan.code}
         upgradePlanCode={myPlanQuery.data?.upgradePlanCode}
         planLoaded={planLoaded}
+        billingInterval={billingInterval}
       />
+      </div>
     </div>
   );
 }

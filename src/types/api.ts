@@ -222,6 +222,17 @@ export type MatchingCandidate = Application & {
 
 export type PlanAudience = 'USER' | 'COMPANY';
 
+export type BillingInterval = 'MONTHLY' | 'YEARLY';
+
+export type PlanPricing = {
+  monthly: { priceLabel: string };
+  annual?: {
+    priceLabel: string;
+    monthlyEquivalentLabel: string;
+    savingsLabel: string;
+  };
+};
+
 export type PlanLimits = {
   maxActiveJobs?: number | null;
   maxApplicationsPerMonth?: number | null;
@@ -244,8 +255,12 @@ export type PlanMeResponse = {
     name: string;
     description: string;
     priceLabel: string;
+    pricing: PlanPricing;
     limits: PlanLimits;
   };
+  billingInterval: BillingInterval;
+  cancelAtPeriodEnd: boolean;
+  renewsAt: string | null;
   usage: PlanUsageMetric[];
   upgradePlanCode: string | null;
 };
@@ -255,6 +270,7 @@ export type PublicPlan = {
   name: string;
   description: string;
   priceLabel: string;
+  pricing: PlanPricing;
   limits: PlanLimits;
 };
 

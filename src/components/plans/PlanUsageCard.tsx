@@ -7,6 +7,7 @@ import { Badge, Btn, Card } from '@/components/taskio/ui';
 import { ConfirmDialog } from '@/components/taskio/ConfirmDialog';
 import { PageLoader } from '@/components/feedback/PageLoader';
 import { ErrorState } from '@/components/feedback/ErrorState';
+import { appendBillingQuery, BillingIntervalToggle } from '@/components/plans/BillingIntervalToggle';
 import { getSubscribeCTALabel } from '@/components/plans/planFeatures';
 import { UPGRADE_ACCOUNT_PATH, inferUpgradePlanCode } from '@/components/plans/planSubscribe';
 import {
@@ -18,7 +19,11 @@ import { plansApi } from '@/lib/api/plans.api';
 import { invalidatePlans } from '@/lib/queryInvalidation';
 import { mapApiErrors } from '@/lib/utils';
 import { queryKeys } from '@/lib/queryKeys';
-import type { PlanMeResponse, PlanUsageMetric } from '@/types/api';
+import type { BillingInterval, PlanMeResponse, PlanUsageMetric } from '@/types/api';
+
+function formatRenewalDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
 
 function usagePercent(metric: PlanUsageMetric): number | null {
   if (metric.limit == null || metric.limit <= 0) return null;
@@ -71,13 +76,14 @@ function UsageRow({ metric }: { metric: PlanUsageMetric }) {
 type PlanUsageCardProps = {
   data?: PlanMeResponse;
   compact?: boolean;
-  onCancelled?: () => void;
+  onCancelled?: (updated: PlanMeResponse) => void;
 };
 
 export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsageCardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('MONTHLY');
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.me(user!.id),
@@ -93,8 +99,11 @@ export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsag
         await invalidatePlans(queryClient, user.id);
       }
       setConfirmOpen(false);
-      toast.success('Assinatura cancelada. Você voltou ao plano grátis.');
-      onCancelled?.();
+      const accessUntil = updated.renewsAt
+        ? formatRenewalDate(updated.renewsAt)
+        : 'o fim do período pago';
+      toast.success(`Renovação cancelada. Acesso ao ${updated.plan.name} até ${accessUntil}.`);
+      onCancelled?.(updated);
     },
     onError: (err) => toast.error(mapApiErrors(err).message),
   });
@@ -127,8 +136,10 @@ export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsag
   if (!data) return null;
 
   const isOnPaidPlan = !canUpgrade;
-  const checkoutPath =
-    data.audience === 'USER' ? UPGRADE_ACCOUNT_PATH.user : UPGRADE_ACCOUNT_PATH.company;
+  const checkoutPath = appendBillingQuery(
+    data.audience === 'USER' ? UPGRADE_ACCOUNT_PATH.user : UPGRADE_ACCOUNT_PATH.company,
+    billingInterval,
+  );
 
   const fallbackPlans =
     data.audience === 'USER' ? FALLBACK_FREELANCER_PLANS : FALLBACK_COMPANY_PLANS;
@@ -163,20 +174,40 @@ export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsag
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <p className="font-display text-lg font-semibold tracking-tight">{data.plan.priceLabel}</p>
+            {isOnPaidPlan && data.cancelAtPeriodEnd && data.renewsAt && (
+              <p className="text-xs text-warning-foreground">
+                Renovação cancelada · acesso até {formatRenewalDate(data.renewsAt)}
+              </p>
+            )}
+            {isOnPaidPlan && !data.cancelAtPeriodEnd && data.renewsAt && (
+              <p className="text-xs text-muted-foreground">
+                Renova em {formatRenewalDate(data.renewsAt)}
+              </p>
+            )}
+            {isOnPaidPlan && !data.cancelAtPeriodEnd && !data.renewsAt && data.billingInterval === 'MONTHLY' && (
+              <p className="text-xs text-muted-foreground">Cobrança mensal recorrente</p>
+            )}
             {data.audience === 'USER' && data.plan.limits.profileBoostWeight > 0 && (
               <p className="text-xs text-muted-foreground">
                 +{data.plan.limits.profileBoostWeight}% no matching
               </p>
             )}
             {canUpgrade && (
-              <Link to={checkoutPath}>
-                <Btn size="sm">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  {subscribeLabel}
-                </Btn>
-              </Link>
+              <>
+                <BillingIntervalToggle
+                  value={billingInterval}
+                  onChange={setBillingInterval}
+                  className="scale-90 origin-right"
+                />
+                <Link to={checkoutPath}>
+                  <Btn size="sm">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    {subscribeLabel}
+                  </Btn>
+                </Link>
+              </>
             )}
-            {isOnPaidPlan && (
+            {isOnPaidPlan && !data.cancelAtPeriodEnd && (
               <Btn
                 variant="secondary"
                 size="sm"
@@ -192,6 +223,13 @@ export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsag
       </div>
 
       <div className="space-y-4 p-6">
+        {data.cancelAtPeriodEnd && data.renewsAt && (
+          <div className="rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-muted-foreground">
+            A renovação automática foi desativada. Você mantém acesso integral ao plano{' '}
+            <span className="font-medium text-foreground">{data.plan.name}</span> até{' '}
+            <span className="font-medium text-foreground">{formatRenewalDate(data.renewsAt)}</span>.
+          </div>
+        )}
         {data.usage.map((metric) => (
           <UsageRow key={metric.key} metric={metric} />
         ))}
@@ -201,16 +239,24 @@ export function PlanUsageCard({ data: dataProp, compact, onCancelled }: PlanUsag
       <ConfirmDialog
         open={confirmOpen}
         tone="danger"
-        title="Cancelar assinatura?"
+        title="Cancelar renovação automática?"
         description={
           <>
-            Você voltará ao plano grátis e perderá os limites ampliados do{' '}
-            <span className="font-medium text-foreground">{data.plan.name}</span>. Não há cobrança e
-            você pode assinar novamente quando quiser.
+            A renovação será desativada, mas você continua com acesso integral ao plano{' '}
+            <span className="font-medium text-foreground">{data.plan.name}</span>
+            {data.renewsAt ? (
+              <>
+                {' '}
+                até <span className="font-medium text-foreground">{formatRenewalDate(data.renewsAt)}</span>
+              </>
+            ) : (
+              ' até o fim do período já pago'
+            )}
+            . Não há reembolso proporcional.
           </>
         }
-        confirmLabel="Cancelar assinatura"
-        cancelLabel="Manter plano"
+        confirmLabel="Cancelar renovação"
+        cancelLabel="Manter assinatura"
         loading={cancelMutation.isPending}
         onConfirm={() => cancelMutation.mutate()}
         onCancel={() => setConfirmOpen(false)}

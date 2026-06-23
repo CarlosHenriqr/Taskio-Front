@@ -1,5 +1,6 @@
-import type { PlanAudience, PublicPlan } from '@/types/api';
+import type { BillingInterval, PlanAudience, PublicPlan } from '@/types/api';
 import { getSubscribeCTALabel } from '@/components/plans/planFeatures';
+import { appendBillingQuery } from '@/components/plans/BillingIntervalToggle';
 
 export const UPGRADE_ACCOUNT_PATH = {
   user: '/freelancer/assinar',
@@ -29,12 +30,16 @@ export function resolvePlanSubscribeAction(
     currentPlanCode?: string;
     upgradePlanCode?: string | null;
     planLoaded?: boolean;
+    billingInterval?: BillingInterval;
   },
 ): { href: string; label: string } | null {
   if (!isPaidPlan(plan)) return null;
 
   const columnAccountType = columnAudience === 'USER' ? 'user' : 'company';
-  const upgradePath = UPGRADE_ACCOUNT_PATH[columnAccountType];
+  const upgradePath = appendBillingQuery(
+    UPGRADE_ACCOUNT_PATH[columnAccountType],
+    options.billingInterval ?? 'MONTHLY',
+  );
   const label = getSubscribeCTALabel(plan.name);
 
   if (!options.isAuthenticated) {

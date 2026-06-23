@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
+import { BillingIntervalToggle } from '@/components/plans/BillingIntervalToggle';
 import { PlanUsageCard } from '@/components/plans/PlanUsageCard';
 import {
   FALLBACK_COMPANY_PLANS,
@@ -11,11 +12,12 @@ import { inferUpgradePlanCode, resolvePlanSubscribeAction } from '@/components/p
 import { useAuth } from '@/contexts/AuthContext';
 import { plansApi } from '@/lib/api/plans.api';
 import { queryKeys } from '@/lib/queryKeys';
-import type { PlanAudience } from '@/types/api';
+import type { BillingInterval, PlanAudience } from '@/types/api';
 
 export function BillingPanel() {
   const { user } = useAuth();
   const [justCancelled, setJustCancelled] = useState(false);
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>('MONTHLY');
 
   const planQuery = useQuery({
     queryKey: queryKeys.plans.me(user!.id),
@@ -47,7 +49,13 @@ export function BillingPanel() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <PlanUsageCard onCancelled={() => setJustCancelled(true)} />
+      <PlanUsageCard
+        onCancelled={(updated) => {
+          if (!updated.cancelAtPeriodEnd && updated.upgradePlanCode) {
+            setJustCancelled(true);
+          }
+        }}
+      />
 
       {isOnFreePlan && audience && (
         <div className="space-y-4">
@@ -55,8 +63,8 @@ export function BillingPanel() {
             <div className="flex items-start gap-3 rounded-xl border border-border/70 bg-surface-muted/40 p-4 text-sm">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <p className="text-muted-foreground">
-                Sua assinatura foi cancelada e você está no plano grátis. Escolha um plano abaixo
-                para assinar novamente quando quiser.
+                Seu plano pago expirou e você voltou ao plano grátis. Escolha um plano abaixo para
+                assinar novamente quando quiser.
               </p>
             </div>
           )}
@@ -66,6 +74,9 @@ export function BillingPanel() {
             <p className="mt-0.5 text-sm text-muted-foreground">
               Planos disponíveis para o seu perfil.
             </p>
+            <div className="mt-3">
+              <BillingIntervalToggle value={billingInterval} onChange={setBillingInterval} />
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -75,12 +86,14 @@ export function BillingPanel() {
                 audience={audience}
                 plan={plan}
                 highlighted={index === plans.length - 1}
+                billingInterval={billingInterval}
                 subscribeAction={resolvePlanSubscribeAction(plan, audience, {
                   isAuthenticated: true,
                   accountType,
                   currentPlanCode: data?.plan.code,
                   upgradePlanCode: data?.upgradePlanCode,
                   planLoaded: true,
+                  billingInterval,
                 })}
               />
             ))}
