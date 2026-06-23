@@ -204,6 +204,7 @@ export type RecommendedCandidate = {
   matchScore: number;
   matchPercent: number;
   matchedTechnologies: string[];
+  isFeatured?: boolean;
 };
 
 export type MatchingJob = Job & {

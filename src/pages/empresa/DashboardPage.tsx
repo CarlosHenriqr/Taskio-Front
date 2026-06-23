@@ -29,6 +29,7 @@ import {
   TechPill,
 } from '@/components/shared/ContentCards';
 import { UserAvatar } from '@/components/shared/UserAvatar';
+import { ProBadge } from '@/components/shared/ProBadge';
 import { formatJobPayment } from '@/lib/jobPayment';
 import { PageTransition } from '@/components/layout/PageTransition';
 import { usePageShell } from '@/contexts/ShellContext';
@@ -40,7 +41,7 @@ import { ApiRequestError } from '@/lib/api/client';
 import { fetchCompanyApplications, fetchCompanyJobs } from '@/lib/companyJobs';
 import { matchingApi } from '@/lib/api/matching.api';
 import { filterByMinMatch } from '@/lib/matching.util';
-import { formatRelativeDate } from '@/lib/utils';
+import { cn, formatRelativeDate } from '@/lib/utils';
 import type { Application, Job, RecommendedCandidate } from '@/types/api';
 
 type RecommendedForJob = RecommendedCandidate & {
@@ -48,19 +49,66 @@ type RecommendedForJob = RecommendedCandidate & {
   jobTitle: string;
 };
 
-const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+type ChartPeriod = '7d' | '1m' | '6m' | '1y';
 
-function buildChartData(applications: Application[]) {
-  const counts = new Array(7).fill(0);
+const CHART_PERIODS: { value: ChartPeriod; label: string }[] = [
+  { value: '7d', label: '7 dias' },
+  { value: '1m', label: '1 mês' },
+  { value: '6m', label: '6 meses' },
+  { value: '1y', label: '1 ano' },
+];
+
+const PERIOD_DESCRIPTION: Record<ChartPeriod, string> = {
+  '7d': 'Candidaturas recebidas nos últimos 7 dias.',
+  '1m': 'Candidaturas recebidas no último mês.',
+  '6m': 'Candidaturas recebidas nos últimos 6 meses.',
+  '1y': 'Candidaturas recebidas no último ano.',
+};
+
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function buildChartData(applications: Application[], period: ChartPeriod) {
   const now = new Date();
+
+  if (period === '6m' || period === '1y') {
+    const months = period === '6m' ? 6 : 12;
+    const buckets = Array.from({ length: months }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (months - 1 - i), 1);
+      return { key: `${d.getFullYear()}-${d.getMonth()}`, label: MONTHS[d.getMonth()], candidatos: 0 };
+    });
+    const indexByKey = new Map(buckets.map((b, i) => [b.key, i]));
+    applications.forEach((a) => {
+      const d = new Date(a.createdAt);
+      const i = indexByKey.get(`${d.getFullYear()}-${d.getMonth()}`);
+      if (i !== undefined) buckets[i].candidatos++;
+    });
+    return buckets.map(({ label, candidatos }) => ({ label, candidatos }));
+  }
+
+  const days = period === '7d' ? 7 : 30;
+  const today = startOfDay(now);
+  const counts = new Array(days).fill(0);
   applications.forEach((a) => {
-    const d = new Date(a.createdAt);
-    const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
-    if (diffDays >= 0 && diffDays < 7) {
-      counts[6 - diffDays]++;
-    }
+    const d = startOfDay(new Date(a.createdAt));
+    const diff = Math.round((today.getTime() - d.getTime()) / 86400000);
+    if (diff >= 0 && diff < days) counts[days - 1 - diff]++;
   });
-  return DAYS.map((day, i) => ({ day, candidatos: counts[i], propostas: Math.max(0, Math.floor(counts[i] * 0.6)) }));
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - (days - 1 - i));
+    const label =
+      period === '7d'
+        ? WEEKDAYS[d.getDay()]
+        : `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return { label, candidatos: counts[i] };
+  });
 }
 
 function interestKey(jobId: string, userId: string) {
@@ -70,6 +118,7 @@ function interestKey(jobId: string, userId: string) {
 export function EmpresaDashboardPage() {
   const { user } = useAuth();
   const [sentInterests, setSentInterests] = useState<Set<string>>(new Set());
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('7d');
 
   usePageShell({
     title: 'Dashboard',
@@ -153,7 +202,10 @@ export function EmpresaDashboardPage() {
   const applications = appsQuery.data ?? [];
   const openJobsCount = jobs.filter((j) => j.status === 'OPEN').length;
   const inProgress = applications.filter((a) => a.status === 'ACCEPTED').length;
-  const chartData = buildChartData(applications);
+  const chartData = useMemo(
+    () => buildChartData(applications, chartPeriod),
+    [applications, chartPeriod],
+  );
   const isLoading = jobsQuery.isLoading;
   const isError = jobsQuery.isError;
 
@@ -195,7 +247,30 @@ export function EmpresaDashboardPage() {
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-          <SectionCard title="Atividade da semana" description="Candidaturas recebidas.">
+          <SectionCard
+            title="Atividade"
+            description={PERIOD_DESCRIPTION[chartPeriod]}
+            action={
+              <div className="flex shrink-0 flex-wrap gap-0.5 rounded-lg border border-border/70 bg-surface-muted/40 p-0.5">
+                {CHART_PERIODS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setChartPeriod(p.value)}
+                    aria-pressed={chartPeriod === p.value}
+                    className={cn(
+                      'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                      chartPeriod === p.value
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            }
+          >
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
@@ -207,12 +282,14 @@ export function EmpresaDashboardPage() {
                   </defs>
                   <CartesianGrid stroke="oklch(0.925 0.008 80)" vertical={false} />
                   <XAxis
-                    dataKey="day"
+                    dataKey="label"
                     stroke="oklch(0.52 0.02 80)"
                     fontSize={11}
                     fontFamily="JetBrains Mono"
                     tickLine={false}
                     axisLine={false}
+                    interval={chartPeriod === '1m' ? 3 : 0}
+                    minTickGap={8}
                   />
                   <YAxis
                     stroke="oklch(0.52 0.02 80)"
@@ -291,7 +368,10 @@ export function EmpresaDashboardPage() {
                       <UserAvatar name={c.name} avatarUrl={c.avatarUrl} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate font-display text-sm font-semibold">{c.name}</p>
+                          <div className="flex min-w-0 items-center gap-1">
+                            <p className="truncate font-display text-sm font-semibold">{c.name}</p>
+                            {c.isFeatured && <ProBadge />}
+                          </div>
                           <Badge tone="success">{c.matchPercent}% match</Badge>
                         </div>
                         <Link

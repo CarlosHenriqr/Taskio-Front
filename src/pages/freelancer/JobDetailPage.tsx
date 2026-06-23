@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
@@ -20,6 +20,12 @@ import { invalidateApplications } from '@/lib/queryInvalidation';
 import { queryKeys } from '@/lib/queryKeys';
 import { ApiRequestError } from '@/lib/api/client';
 
+function formatCountdown(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 export function FreelancerJobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -27,6 +33,13 @@ export function FreelancerJobDetailPage() {
   const { user } = useAuth();
   const [coverLetter, setCoverLetter] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = setTimeout(() => setCooldownSeconds((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldownSeconds]);
 
   const jobQuery = useQuery({
     queryKey: ['jobs', id],
@@ -53,6 +66,10 @@ export function FreelancerJobDetailPage() {
       const { message, fields } = mapApiErrors(err);
       setErrors(fields);
       if (err instanceof ApiRequestError && err.code === 'SESSION_EXPIRED') return;
+      if (err instanceof ApiRequestError && err.code === 'APPLICATION_REAPPLY_COOLDOWN') {
+        const seconds = Number(err.details?.retryAfterSeconds) || 0;
+        if (seconds > 0) setCooldownSeconds(seconds);
+      }
       toast.error(message);
     },
   });
@@ -145,9 +162,18 @@ export function FreelancerJobDetailPage() {
                   <Btn
                     className="w-full"
                     type="submit"
-                    disabled={applyMutation.isPending || !hasResume || profileQuery.isLoading}
+                    disabled={
+                      applyMutation.isPending ||
+                      !hasResume ||
+                      profileQuery.isLoading ||
+                      cooldownSeconds > 0
+                    }
                   >
-                    {applyMutation.isPending ? 'Enviando...' : 'Enviar candidatura'}
+                    {cooldownSeconds > 0
+                      ? `Aguarde ${formatCountdown(cooldownSeconds)} e tente novamente`
+                      : applyMutation.isPending
+                        ? 'Enviando...'
+                        : 'Enviar candidatura'}
                   </Btn>
                 </form>
               </Card>

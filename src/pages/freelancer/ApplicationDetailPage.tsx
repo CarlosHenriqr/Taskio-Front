@@ -289,6 +289,27 @@ export function FreelancerApplicationDetailPage() {
               </ContentPanel>
             )}
 
+            {application.status === 'CANCELLED' && job?.id && (
+              <ContentPanel
+                title="Candidatura cancelada"
+                description={
+                  job.status === 'OPEN'
+                    ? 'Você cancelou esta candidatura. Se mudou de ideia, pode se candidatar novamente.'
+                    : 'Você cancelou esta candidatura e este projeto não está mais aberto.'
+                }
+              >
+                {job.status === 'OPEN' ? (
+                  <Link to={`/freelancer/projetos/${job.id}`}>
+                    <Btn className="mt-4 w-full">Candidatar-se novamente</Btn>
+                  </Link>
+                ) : (
+                  <Btn className="mt-4 w-full" disabled>
+                    Projeto não está aberto
+                  </Btn>
+                )}
+              </ContentPanel>
+            )}
+
             <ContentPanel title="Empresa">
               <div className="flex items-start gap-3">
                 <UserAvatar
